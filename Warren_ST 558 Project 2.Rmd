@@ -1,7 +1,6 @@
 ---
 title: "Untitled"
 author: "Eric Warren"
-output: github_document
 ---
 
 ```{r setup, include=FALSE}
