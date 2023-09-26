@@ -7,6 +7,7 @@ rmarkdown::render("~/ST-558-Project-2/Warren_ST 558 Project 2.Rmd",
                     toc = TRUE, 
                     toc_depth = 3,
                     number_sections = TRUE,
-                    df_print = "tibble"
+                    df_print = "tibble",
+                    html_preview = FALSE
                   )
 )
