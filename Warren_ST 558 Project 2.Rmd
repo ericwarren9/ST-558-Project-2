@@ -92,6 +92,70 @@ getAccountTypes <- function(x = "account"){
 }
 ```
 
+## `getUnfilteredData()`
+
+Here we can just get a data set by using this function and specifying which full data set we want from the corresponding API. We might not want to filter anything but if we do then we can do that in later functions.
+```{r get data}
+getUnfilteredData <- function(data = "interest rates"){
+  # Get text set up
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/"
+  endpoint1 <- "avg_interest_rates"
+  endpoint2 <- "debt_to_penny"
+  endpoint3 <- "balance_sheets"
+  usedEndpoint <- if(data == "interest rates") endpoint1 else if(data == "debt") endpoint2 else if (data == "balance sheet") endpoint3 else stop("The data operator must either be 'interest rates' to get the Interest Rate API, 'balance sheet' to get the Balance Sheet API, or 'debt' to get data from the National Debt API. The default if left blank is the 'interest rates' argument.")
+  limitText <- "?limit=9999"
+  
+  
+  # Get the url
+  finalString <- paste(jsonString, usedEndpoint, limitText, sep = "")
+  
+  # Convert to tibble
+  jsonData <- httr::GET(finalString)
+  
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  
+  tibble <- as_tibble(contents$data)
+  
+  # Return tibble
+  return(tibble)
+}
+```
+
+Now we are going to start looking at functions we can make by filtering the data and make our API more interactive for the user.
+
+## `filterDate()`
+
+As an investor, we might pick a certain security or a group of them because we are told to look at them or we feel more confident in them. Other times people might want to pick how well securities are doing in recent time. What if we wanted to instead look at the balance sheet? Or what about the US Debt? And what if we want to look at either of these metrics over a certain period of time? That is why we are creating this function so the user can filter by the date they would like. Please note the dates must be in a "yyyy-mm-dd" format. Also please specify your arguments. This function is very similar to `getUnfilteredData()` except now we are specifying the date range we want along with the data set in question.
+```{r filter date function}
+filterDate <- function(data = "interest rates", date = NULL, operator = NULL){
+  # Get text set up
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/"
+  endpoint1 <- "avg_interest_rates"
+  endpoint2 <- "debt_to_penny"
+  endpoint3 <- "balance_sheets"
+  usedEndpoint <- if(data == "interest rates") endpoint1 else if(data == "debt") endpoint2 else if (data == "balance sheet") endpoint3 else stop("The data operator must either be 'interest rates' to get the Interest Rate API, 'balance sheet' to get the Balance Sheet API, or 'debt' to get data from the National Debt API. The default if left blank is the 'interest rates' argument.")
+  limitFilterText <- "?limit=9999&filter="
+  
+  # Get the correct text for the data we want.
+  addedText <- if ((is.null(operator) == TRUE) | (is.null(date) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("record_date:", operator, ":", URLencode(date), ",", sep = "") else stop("Please input a value that is acceptable. The date option must be in 'yyyy-mm-dd' format and the starting date for the data is '2001-01-31' for the interest rate API, '1995-09-30' for the balance sheet API, and '1993-04-01' for the debt API. Also please note the balance sheet API is updated every September 30th for the fiscal year. The input for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure inputs are in quotations and spelled in the same way you can find in this message.")
+  
+  # Get the url
+  finalString <- paste(jsonString, usedEndpoint, limitFilterText, addedText, sep = "")
+  
+  # Convert to tibble
+  jsonData <- httr::GET(finalString)
+  
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  
+  tibble <- as_tibble(contents$data)
+  
+  # Return tibble
+  return(tibble)
+}
+```
+
+Now we are going to look at making functions for a specific data set. We really can't filter the debt data in any other way other than by date but we can for the other two. Let us first look at doing this with the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities).
+
 ## `securityType()`
 
 Here we can use our helper function from before to get the security types that are present in the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities). As we can see they are `r getSecurityList()`. We can use this to get the data we want to analyze by a particular security type. This function has an input of a vector with the type of securities you want to analyze.
@@ -144,37 +208,6 @@ individualSecurities <- function(vec = NULL){
 }
 ```
 
-## `filterDate()`
-
-As an investor, we might pick a certain security or a group of them because we are told to look at them or we feel more confident in them. Other times people might want to pick how well securities are doing in recent time. What if we wanted to instead look at the balance sheet? Or what about the US Debt? And what if we want to look at either of these metrics over a certain period of time? That is why we are creating this function so the user can filter by the date they would like. Please note the dates must be in a "yyyy-mm-dd" format. Also please specify your arguments.
-```{r filter date function}
-filterDate <- function(data = "interest rates", date = NULL, operator = NULL){
-  # Get text set up
-  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/"
-  endpoint1 <- "avg_interest_rates"
-  endpoint2 <- "debt_to_penny"
-  endpoint3 <- "balance_sheets"
-  usedEndpoint <- if(data == "interest rates") endpoint1 else if(data == "debt") endpoint2 else if (data == "balance sheet") endpoint3 else stop("The data operator must either be 'interest rates' to get the Interest Rate API, 'balance sheet' to get the Balance Sheet API, or 'debt' to get data from the National Debt API. The default if left blank is the 'interest rates' argument.")
-  limitFilterText <- "?limit=9999&filter="
-  
-  # Get the correct text for the data we want.
-  addedText <- if ((is.null(operator) == TRUE) | (is.null(date) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("record_date:", operator, ":", URLencode(date), ",", sep = "") else stop("Please input a value that is acceptable. The date option must be in 'yyyy-mm-dd' format and the starting date for the data is '2001-01-31' for the interest rate API, '1995-09-30' for the balance sheet API, and '1993-04-01' for the debt API. Also please note the balance sheet API is updated every September 30th for the fiscal year. The input for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure inputs are in quotations and spelled in the same way you can find in this message.")
-  
-  # Get the url
-  finalString <- paste(jsonString, usedEndpoint, limitFilterText, addedText, sep = "")
-  
-  # Convert to tibble
-  jsonData <- httr::GET(finalString)
-  
-  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
-  
-  tibble <- as_tibble(contents$data)
-  
-  # Return tibble
-  return(tibble)
-}
-```
-
 ## `filterPercentage()`
 
 As an investor, we want to target investments that make the most sense with the percentage of interest we would get from that said investment. Users might want to compare rates they found from other stocks and/or bonds with rates that might be offered by the Treasury. The other thing people do is short the market (including bonds). This means they expect rates to go down over time and lock someone into buying an investment at a predetermined rate and then after a certain period of time the seller would have to give the current value of the investment back to the buyer. In this case, the buyer might try to find lower bond interest rates to negotiate the predetermined rate being lower and the seller will want to try to find higher rates to drive the price up. So someone can use this function to try to get data that matches their interest rates goals either from buying a bond to possibly shorting the market. This is used for the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities).
@@ -198,3 +231,5 @@ filterPercentage <- function(percentage = NULL, operator = NULL){
   return(tibble)
 }
 ```
+
+Now we are going to pivot to look at our balance sheet of how we can filter some data out using some key metrics for the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets).
