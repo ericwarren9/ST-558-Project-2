@@ -7,7 +7,7 @@ author: "Eric Warren"
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
-This document is a vignette to show how to get data from an [API](https://aws.amazon.com/what-is/api/). To demonstrate, I'll be interacting with the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities). There will be a few functions built to interact with some of the endpoints and then will be followed up by some exploratory data analysis with some of the data that is retrieved from the API.
+This document is a vignette to show how to get data from an [API](https://aws.amazon.com/what-is/api/). To demonstrate, I'll be interacting with the [Fed Treasury API](https://fiscaldata.treasury.gov/api-documentation/), which include the the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities), the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets), and the [Fed Treasury API on National Debt](https://fiscaldata.treasury.gov/datasets/debt-to-the-penny/debt-to-the-penny). There will be a few functions built to interact with some of the endpoints and then will be followed up by some exploratory data analysis with some of the data that is retrieved from the API.
 
 # Initial Requirements
 
@@ -15,7 +15,7 @@ To use the functions for interacting with the Fed Treasury API, I used the follo
 
 - [`tidyverse`](https://www.tidyverse.org/): There are many useful features for data manipulation and visualization within the group of packages associated with the `tidyverse` universe.
 - [`jsonlite`](https://cran.r-project.org/web/packages/jsonlite/): Allows API interaction to get the necessary data we are going to use in this document.
-- [httr](https://cran.r-project.org/web/packages/httr/index.html): Allows us to get our data from the desired URL.
+- [`httr`](https://cran.r-project.org/web/packages/httr/index.html): Allows us to get our data from the desired URL.
 
 ```{r load libraries needed, echo=FALSE}
 # Load in the packages.
@@ -26,11 +26,30 @@ library(httr)
 
 # API Interaction Functions
 
-Here is where I am going to make some functions that will help with fulfilling our needs with reading in and analyzing our data from the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities).
+Here is where I am going to make some functions that will help with fulfilling our needs with reading in and analyzing our data from the [Fed Treasury API](https://fiscaldata.treasury.gov/api-documentation/), which include the the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities), the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets), and the [Fed Treasury API on National Debt](https://fiscaldata.treasury.gov/datasets/debt-to-the-penny/debt-to-the-penny).
+
+## `removeNulls()`
+
+Once you do read in your data set immediately use this function to remove null values since they will not help in our analysis since we need to know all the information in the columns to get any kind of result. We should filter our data frame or tibble to what we want with the appropriate columns before using this function.
+```{r remove nulls}
+removeNulls <- function(df_name){
+  # Copy df_name
+  df <- df_name
+  
+  # Get null values and get rid of observations that have them and columns that are mostly null (over 50%)
+  df <- df[ , colMeans(!(df == "null")) > 0.5] # Columns first
+  df$countNulls <- apply(df, 1, function(x) length(which(x == "null"))) # Now rows
+  df <- df[df$countNulls == 0, ]
+  df <- df[1:length(df)-1]
+  
+  # Return updated df
+  return(df)
+}
+```
 
 ## `convertToCorrectType()`
 
-This function was made since the data in our API was returning dates in the character format. We needed a way to have the dates accurately show up in our data set. We had the same issue with our numeric data. So we created a function that allows the vector to end up in the correct type of data (either numeric, date, or character).
+This function was made since the data in our API was returning dates in the character format. We needed a way to have the dates accurately show up in our data set. We had the same issue with our numeric data. So we created a function that allows the vector (or a column in our dataset) to end up in the correct type of data (either numeric, date, or character). Please use the function `removeNulls()` first to make sure our data does not have missing values which will not help us in our analyzing. 
 ```{r character to dates}
 convertToCorrectType <- function(x){
   # Make conditional statement to make sure column can be date
@@ -41,16 +60,33 @@ convertToCorrectType <- function(x){
 
 ## `getSecurityList()`
 
-This function acts as a helper function for the user as we can now get the list of Security Type Descriptions (so if we want to look at Marketable, Non-marketable, or Interest-bearing Debt specific type securities) or if we want to subset even further later on, we can get the exact security names that are available (example: "Treasury Bills", "Treasury Notes", etc.)
+This function acts as a helper function for the user as we can now get the list of Security Type Descriptions for the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities) (so if we want to look at Marketable, Non-marketable, or Interest-bearing Debt specific type securities) or if we want to subset even further later on, we can get the exact security names that are available (example: "Treasury Bills", "Treasury Notes", etc.)
 ```{r security names function}
 getSecurityList <- function(x = "security type"){
   # Get the data in the correct format to get the list of unique values; limit is 4500 which includes all data
-  jsonData <- httr::GET("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500")
+  jsonData <- httr::GET("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=9999")
   contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
   tibble <- as_tibble(contents$data)
   
   # Now get the list of values depending on value inputted; default is "security type"
-  outputList <- if(x == "security type") unique(tibble$security_type_desc) else if(x == "specific securities") unique(tibble$security_desc) else stop("Input must be either 'security type' to get the security type options or 'specific securities' to get the exact security names (individual options -- like Treasury Bills, Treasury Notes, etc.)")
+  outputList <- if(x == "security type") unique(tibble$security_type_desc) else if(x == "specific securities") unique(tibble$security_desc) else stop("Input must be either 'security type' to get the security type options or 'specific securities' to get the exact security names (individual options -- like Treasury Bills, Treasury Notes, etc.) The default is 'security type'.")
+  
+  return(outputList)
+}
+```
+
+## `getAccountTypes()`
+
+This function acts as a helper function for the user as we can now get the list of Account Type Descriptions for the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets) (so if we want to look at Assets, Liabilities, etc.) or if we want to subset even further later on, we can get the exact line item names that are available (example: "Accounts payable", "Interest payable", etc.)
+```{r security names function}
+getAccountTypes <- function(x = "account"){
+  # Get the data in the correct format to get the list of unique values; limit is 4500 which includes all data
+  jsonData <- httr::GET("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/balance_sheets?limit=9999")
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  tibble <- as_tibble(contents$data)
+  
+  # Now get the list of values depending on value inputted; default is "security type"
+  outputList <- if(x == "account") unique(tibble$account_desc) else if(x == "line items") unique(tibble$line_item_desc) else stop("Input must be either 'account' to get the account type options or 'line items' to get the exact line item names (individual options -- like Accounts payable, Total assets, etc.) The default is 'account'.")
   
   return(outputList)
 }
@@ -58,13 +94,13 @@ getSecurityList <- function(x = "security type"){
 
 ## `securityType()`
 
-Here we can use our helper function from before to get the security types that are present. As we can see they are `r getSecurityList()`. We can use this to get the data we want to analyze by a particular security type. This function has an input of a vector with the type of securities you want to analyze.
+Here we can use our helper function from before to get the security types that are present in the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities). As we can see they are `r getSecurityList()`. We can use this to get the data we want to analyze by a particular security type. This function has an input of a vector with the type of securities you want to analyze.
 ```{r security type function}
 securityType <- function(vec = NULL){
   # Create Testing List 
   testingList <- getSecurityList()
   # Get text set up
-  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500&filter="
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=9999&filter="
   
   addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("security_type_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), "),", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList(). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
   
@@ -84,13 +120,13 @@ securityType <- function(vec = NULL){
 
 ## `individualSecurities()`
 
-Like the `securityType()` function, we might want to instead filter our data by the security itself and not the type (or group of security). Maybe the user is really interested in investing in just Treasury Bonds or maybe the user want to compare just Treasury Bonds to Treasury Notes for interest rates. We can allow the user to do this in a similar manner of how we did it with the `securityType()` function. 
+Like the `securityType()` function, we might want to instead filter our data by the security itself and not the type (or group of security) in the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities). Maybe the user is really interested in investing in just Treasury Bonds or maybe the user want to compare just Treasury Bonds to Treasury Notes for interest rates. We can allow the user to do this in a similar manner of how we did it with the `securityType()` function. 
 ```{r individual security function}
 individualSecurities <- function(vec = NULL){
   # Create Testing List 
   testingList <- getSecurityList("specific securities")
   # Get text set up
-  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500&filter="
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=9999&filter="
   
   addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("security_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), "),", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList('specific securities'). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
   
@@ -110,13 +146,44 @@ individualSecurities <- function(vec = NULL){
 
 ## `filterDate()`
 
-As an investor, we might pick a certain security or a group of them because we are told to look at them or we feel more confident in them. Other times people might want to pick how well securities are doing in recent time. What if we want to look at them over a certain period of time? That is why we are creating this function so the user can filter by the date they would like. Please note the dates must be in a "yyyy-mm-dd" format. Also please specify your arguments.
+As an investor, we might pick a certain security or a group of them because we are told to look at them or we feel more confident in them. Other times people might want to pick how well securities are doing in recent time. What if we wanted to instead look at the balance sheet? Or what about the US Debt? And what if we want to look at either of these metrics over a certain period of time? That is why we are creating this function so the user can filter by the date they would like. Please note the dates must be in a "yyyy-mm-dd" format. Also please specify your arguments.
 ```{r filter date function}
-filterDate <- function(date1 = NULL, operator = NULL){
+filterDate <- function(data = "interest rates", date = NULL, operator = NULL){
   # Get text set up
-  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500&filter="
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/"
+  endpoint1 <- "avg_interest_rates"
+  endpoint2 <- "debt_to_penny"
+  endpoint3 <- "balance_sheets"
+  usedEndpoint <- if(data == "interest rates") endpoint1 else if(data == "debt") endpoint2 else if (data == "balance sheet") endpoint3 else stop("The data operator must either be 'interest rates' to get the Interest Rate API, 'balance sheet' to get the Balance Sheet API, or 'debt' to get data from the National Debt API. The default if left blank is the 'interest rates' argument.")
+  limitFilterText <- "?limit=9999&filter="
   
-  addedText <- if ((is.null(operator) == TRUE) | (is.null(date1) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("record_date:", operator, ":", URLencode(date1), ",", sep = "") else stop("Please input a value that is acceptable. Both date options must be in 'yyyy-mm-dd' format and the starting date for the data is '2001-01-31'. The inputs for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure inputs are in quotations and spelled in the same way you can find in this message.")
+  # Get the correct text for the data we want.
+  addedText <- if ((is.null(operator) == TRUE) | (is.null(date) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("record_date:", operator, ":", URLencode(date), ",", sep = "") else stop("Please input a value that is acceptable. The date option must be in 'yyyy-mm-dd' format and the starting date for the data is '2001-01-31' for the interest rate API, '1995-09-30' for the balance sheet API, and '1993-04-01' for the debt API. Also please note the balance sheet API is updated every September 30th for the fiscal year. The input for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure inputs are in quotations and spelled in the same way you can find in this message.")
+  
+  # Get the url
+  finalString <- paste(jsonString, usedEndpoint, limitFilterText, addedText, sep = "")
+  
+  # Convert to tibble
+  jsonData <- httr::GET(finalString)
+  
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  
+  tibble <- as_tibble(contents$data)
+  
+  # Return tibble
+  return(tibble)
+}
+```
+
+## `filterPercentage()`
+
+As an investor, we want to target investments that make the most sense with the percentage of interest we would get from that said investment. Users might want to compare rates they found from other stocks and/or bonds with rates that might be offered by the Treasury. The other thing people do is short the market (including bonds). This means they expect rates to go down over time and lock someone into buying an investment at a predetermined rate and then after a certain period of time the seller would have to give the current value of the investment back to the buyer. In this case, the buyer might try to find lower bond interest rates to negotiate the predetermined rate being lower and the seller will want to try to find higher rates to drive the price up. So someone can use this function to try to get data that matches their interest rates goals either from buying a bond to possibly shorting the market. This is used for the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities).
+```{r filter percentages}
+filterPercentage <- function(percentage = NULL, operator = NULL){
+  # Get text set up
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=9999&filter="
+  
+  addedText <- if ((is.null(operator) == TRUE) | (is.null(percentage) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("avg_interest_rate_amt:", operator, ":", URLencode(as.character(percentage)), ",", sep = "") else stop("Please input a value that is acceptable. The percentage value must be a float in x.y format where x is a number and so is y to create a float. Pleae do not put the '%' sign after the number. The input for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure the operator input is in quotations and spelled in the same way you can find in this message.")
   
   finalString <- paste(jsonString, addedText, sep = "")
   
