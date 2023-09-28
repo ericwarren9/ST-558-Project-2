@@ -64,9 +64,9 @@ securityType <- function(vec = NULL){
   # Create Testing List 
   testingList <- getSecurityList()
   # Get text set up
-  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500"
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500&filter="
   
-  addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("&filter=security_type_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), ")", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList(). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
+  addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("security_type_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), "),", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList(). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
   
   finalString <- paste(jsonString, addedText, sep = "")
   
@@ -90,9 +90,9 @@ individualSecurities <- function(vec = NULL){
   # Create Testing List 
   testingList <- getSecurityList("specific securities")
   # Get text set up
-  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500"
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500&filter="
   
-  addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("&filter=security_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), ")", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList('specific securities'). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
+  addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("security_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), "),", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList('specific securities'). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
   
   finalString <- paste(jsonString, addedText, sep = "")
   
@@ -112,11 +112,11 @@ individualSecurities <- function(vec = NULL){
 
 As an investor, we might pick a certain security or a group of them because we are told to look at them or we feel more confident in them. Other times people might want to pick how well securities are doing in recent time. What if we want to look at them over a certain period of time? That is why we are creating this function so the user can filter by the date they would like. Please note the dates must be in a "yyyy-mm-dd" format. Also please specify your arguments.
 ```{r filter date function}
-filterDate <- function(date1 = NULL, date2 = NULL, operator = NULL){
+filterDate <- function(date1 = NULL, operator = NULL){
   # Get text set up
-  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500"
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500&filter="
   
-  addedText <- if ((is.null(operator) == TRUE) | ((is.null(date1) == TRUE) & is.null(date2) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("&filter=record_date:", operator, ":", URLencode(date1), sep = "") else if (operator %in% "in") paste("&filter=record_date:gte:", URLencode(date1), ",record_date:lte", URLencode(date2), sep = "") else stop("Please input a value that is acceptable. Both date options must be in 'yyyy-mm-dd' format and the starting date for the data is '2001-01-31'. The inputs for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, 'eq' for equal to, and 'in' if you want between two dates. Also make sure inputs are in quotations and spelled in the same way you can find in this message.")
+  addedText <- if ((is.null(operator) == TRUE) | (is.null(date1) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("record_date:", operator, ":", URLencode(date1), ",", sep = "") else stop("Please input a value that is acceptable. Both date options must be in 'yyyy-mm-dd' format and the starting date for the data is '2001-01-31'. The inputs for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure inputs are in quotations and spelled in the same way you can find in this message.")
   
   finalString <- paste(jsonString, addedText, sep = "")
   
