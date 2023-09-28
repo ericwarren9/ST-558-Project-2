@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Using the Fed Treasury API as an Example of Interacting with APIs"
 author: "Eric Warren"
 ---
 
@@ -7,3 +7,127 @@ author: "Eric Warren"
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
+This document is a vignette to show how to get data from an [API](https://aws.amazon.com/what-is/api/). To demonstrate, I'll be interacting with the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities). There will be a few functions built to interact with some of the endpoints and then will be followed up by some exploratory data analysis with some of the data that is retrieved from the API.
+
+# Initial Requirements
+
+To use the functions for interacting with the Fed Treasury API, I used the following packages:
+
+- [`tidyverse`](https://www.tidyverse.org/): There are many useful features for data manipulation and visualization within the group of packages associated with the `tidyverse` universe.
+- [`jsonlite`](https://cran.r-project.org/web/packages/jsonlite/): Allows API interaction to get the necessary data we are going to use in this document.
+- [httr](https://cran.r-project.org/web/packages/httr/index.html): Allows us to get our data from the desired URL.
+
+```{r load libraries needed, echo=FALSE}
+# Load in the packages.
+library(tidyverse)
+library(jsonlite)
+library(httr)
+```
+
+# API Interaction Functions
+
+Here is where I am going to make some functions that will help with fulfilling our needs with reading in and analyzing our data from the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities).
+
+## `convertToCorrectType()`
+
+This function was made since the data in our API was returning dates in the character format. We needed a way to have the dates accurately show up in our data set. We had the same issue with our numeric data. So we created a function that allows the vector to end up in the correct type of data (either numeric, date, or character).
+```{r character to dates}
+convertToCorrectType <- function(x){
+  # Make conditional statement to make sure column can be date
+  correctOutput <- if(all(is.na(suppressWarnings(as.Date(x, format = "%Y-%m-%d"))) == FALSE)) as.Date(x, format = "%Y-%m-%d") else if(all(is.na(suppressWarnings(as.numeric(x))) == FALSE)) as.numeric(x) else x
+  return(correctOutput)
+}
+```
+
+## `getSecurityList()`
+
+This function acts as a helper function for the user as we can now get the list of Security Type Descriptions (so if we want to look at Marketable, Non-marketable, or Interest-bearing Debt specific type securities) or if we want to subset even further later on, we can get the exact security names that are available (example: "Treasury Bills", "Treasury Notes", etc.)
+```{r security names function}
+getSecurityList <- function(x = "security type"){
+  # Get the data in the correct format to get the list of unique values; limit is 4500 which includes all data
+  jsonData <- httr::GET("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500")
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  tibble <- as_tibble(contents$data)
+  
+  # Now get the list of values depending on value inputted; default is "security type"
+  outputList <- if(x == "security type") unique(tibble$security_type_desc) else if(x == "specific securities") unique(tibble$security_desc) else stop("Input must be either 'security type' to get the security type options or 'specific securities' to get the exact security names (individual options -- like Treasury Bills, Treasury Notes, etc.)")
+  
+  return(outputList)
+}
+```
+
+## `securityType()`
+
+Here we can use our helper function from before to get the security types that are present. As we can see they are `r getSecurityList()`. We can use this to get the data we want to analyze by a particular security type. This function has an input of a vector with the type of securities you want to analyze.
+```{r security type function}
+securityType <- function(vec = NULL){
+  # Create Testing List 
+  testingList <- getSecurityList()
+  # Get text set up
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500"
+  
+  addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("&filter=security_type_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), ")", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList(). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
+  
+  finalString <- paste(jsonString, addedText, sep = "")
+  
+  # Convert to tibble
+  jsonData <- httr::GET(finalString)
+  
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  
+  tibble <- as_tibble(contents$data)
+  
+  # Return tibble
+  return(tibble)
+}
+```
+
+## `individualSecurities()`
+
+Like the `securityType()` function, we might want to instead filter our data by the security itself and not the type (or group of security). Maybe the user is really interested in investing in just Treasury Bonds or maybe the user want to compare just Treasury Bonds to Treasury Notes for interest rates. We can allow the user to do this in a similar manner of how we did it with the `securityType()` function. 
+```{r individual security function}
+individualSecurities <- function(vec = NULL){
+  # Create Testing List 
+  testingList <- getSecurityList("specific securities")
+  # Get text set up
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500"
+  
+  addedText <- if (is.null(vec) == TRUE) "" else if(all(vec %in% testingList) == TRUE) paste("&filter=security_desc:in:(", paste(URLencode(vec), sep = "", collapse = ","), ")", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getSecurityList('specific securities'). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
+  
+  finalString <- paste(jsonString, addedText, sep = "")
+  
+  # Convert to tibble
+  jsonData <- httr::GET(finalString)
+  
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  
+  tibble <- as_tibble(contents$data)
+  
+  # Return tibble
+  return(tibble)
+}
+```
+
+## `filterDate()`
+
+As an investor, we might pick a certain security or a group of them because we are told to look at them or we feel more confident in them. Other times people might want to pick how well securities are doing in recent time. What if we want to look at them over a certain period of time? That is why we are creating this function so the user can filter by the date they would like. Please note the dates must be in a "yyyy-mm-dd" format. Also please specify your arguments.
+```{r filter date function}
+filterDate <- function(date1 = NULL, date2 = NULL, operator = NULL){
+  # Get text set up
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=4500"
+  
+  addedText <- if ((is.null(operator) == TRUE) | ((is.null(date1) == TRUE) & is.null(date2) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("&filter=record_date:", operator, ":", URLencode(date1), sep = "") else if (operator %in% "in") paste("&filter=record_date:gte:", URLencode(date1), ",record_date:lte", URLencode(date2), sep = "") else stop("Please input a value that is acceptable. Both date options must be in 'yyyy-mm-dd' format and the starting date for the data is '2001-01-31'. The inputs for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, 'eq' for equal to, and 'in' if you want between two dates. Also make sure inputs are in quotations and spelled in the same way you can find in this message.")
+  
+  finalString <- paste(jsonString, addedText, sep = "")
+  
+  # Convert to tibble
+  jsonData <- httr::GET(finalString)
+  
+  contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
+  
+  tibble <- as_tibble(contents$data)
+  
+  # Return tibble
+  return(tibble)
+}
+```
