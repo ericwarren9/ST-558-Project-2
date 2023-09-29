@@ -216,7 +216,7 @@ filterPercentage <- function(percentage = NULL, operator = NULL){
   # Get text set up
   jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?limit=9999&filter="
   
-  addedText <- if ((is.null(operator) == TRUE) | (is.null(percentage) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("avg_interest_rate_amt:", operator, ":", URLencode(as.character(percentage)), ",", sep = "") else stop("Please input a value that is acceptable. The percentage value must be a float in x.y format where x is a number and so is y to create a float. Pleae do not put the '%' sign after the number. The input for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure the operator input is in quotations and spelled in the same way you can find in this message.")
+  addedText <- if ((is.null(operator) == TRUE) | (is.null(percentage) == TRUE)) "" else if(operator %in% c("lt", "gt", "lte", "gte", "eq")) paste("avg_interest_rate_amt:", operator, ":", URLencode(as.character(percentage)), ",", sep = "") else stop("Please input a value that is acceptable. The percentage value must be a float in x.y format where x is a number and so is y to create a float. Numbers should be between 0 and 100 (put 5% as 5 or 5.0). Please do not put the '%' sign after the number. The input for the operator argument are either 'lt' for less than, 'lte' for less than or equal to, 'gt' for greater than, 'gte' for greater than or equal to, and 'eq' for equal to. Also make sure the operator input is in quotations and spelled in the same way you can find in this message.")
   
   finalString <- paste(jsonString, addedText, sep = "")
   
@@ -232,4 +232,135 @@ filterPercentage <- function(percentage = NULL, operator = NULL){
 }
 ```
 
-Now we are going to pivot to look at our balance sheet of how we can filter some data out using some key metrics for the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets).
+## `filterBalanceSheet()`
+
+Now we are going to pivot to look at our balance sheet of how we can filter some data out using some key metrics for the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets). Please use the the `getAccountTypes()` helper function if you are not sure what the acceptable account types are. This function will be helpful to allow us to look at the balance sheet where we can filter by the account type (asset, liability, etc.) and the specific line items we want. Our last argument in the function is either specified with the word "and" or the word "or" which means if we want the account and line item conditions to match up in with the "and" and the "or" being we want the account type but also the specific line items even if they do not match up.
+```{r filter balance sheet}
+filterBalanceSheet <- function(account_types = NULL, line_items = NULL, operator = "or"){
+  # Get json string for api
+  jsonString <- "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/balance_sheets?limit=9999&filter="
+  
+  # set up acceptable options account types and line items
+  acceptableAccountTypes <- getAccountTypes("account")
+  acceptableLineItems <- getAccountTypes("line items")
+  
+  # Get additional added text for account types
+  addedText1 <- if(is.null(account_types) == TRUE) "" else if(all(account_types %in% acceptableAccountTypes) == TRUE) paste("account_desc:in:(", paste(URLencode(account_types), sep = "", collapse = ","), "),", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getAccountTypes('account'). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
+    
+  # Get additional added text for line items
+  addedText2 <- if(is.null(line_items) == TRUE) "" else if(all(line_items %in% acceptableLineItems) == TRUE) paste("line_item_desc:in:(", paste(URLencode(line_items), sep = "", collapse = ","), "),", sep = '') else stop("Please input a value that is acceptable. You can find the acceptable values by using the helper function getAccountTypes('line items'). Also make sure inputs are in quotations and spelled in the same way you can find in the helper function.")
+  
+  # Set up condition for "or" being chosen
+  if(operator == "or"){
+    # Create string urls
+    string1 <- paste(jsonString, addedText1, sep = "")
+    string2 <- paste(jsonString, addedText2, sep = "")
+  
+    # Convert to tibble
+    jsonData1 <- httr::GET(string1); contents1 <- jsonlite::fromJSON(rawToChar(jsonData1$content)); tibble1 <- as_tibble(contents1$data)
+    jsonData2 <- httr::GET(string2); contents2 <- jsonlite::fromJSON(rawToChar(jsonData2$content)); tibble2 <- as_tibble(contents2$data)
+    
+    # Combine into one tibble and sort repeated values; arrange by date like other data sets; must do if else to get correct tibble printed out based on options selected
+    if((is.null(account_types) == TRUE) & (is.null(line_items) == FALSE)){
+      final_tibble <- tibble2
+    }
+    else if((is.null(account_types) == FALSE) & (is.null(line_items) == TRUE)){
+      final_tibble <- tibble1
+    }
+    else{
+      final_tibble <- bind_rows(tibble1, tibble2) 
+      final_tibble <- final_tibble %>% 
+        distinct() %>% 
+        arrange(record_date)
+    }
+  }
+  else if(operator == "and"){
+    # Combine strings into one to get data
+    string <- paste(jsonString, addedText1, addedText2, sep = "")
+    
+    # Convert to tibble
+    jsonData <- httr::GET(string); contents <- jsonlite::fromJSON(rawToChar(jsonData$content)); final_tibble <- as_tibble(contents$data)
+  }
+  else{
+    stop("Must have a valid operator. Options are 'or' and 'and'. The default is 'or'. Please select 'or' if you want the filtering of data to either fall into the category of the accounty type or the line item type. Please select 'and' if you the filtering of data to either fall into the category of the accounty type or the line item type (as is it must be in both conditions).")
+  }
+  return(final_tibble)
+}
+```
+
+## `getFunctionNames()`
+
+So we have a lot of functions that all have specific arguments. I wanted to include another function that allows the user to see the functions available, the arguments associated with their default value, and then the corresponding helper function if they are stuck on how to use it. The user can input which data set they want as well to get the functions that correspond to that data set. The data sets we can put in are "balance sheet", "interest rates", and "debt" to look at corresponding helper table of functions.
+```{r getting function names}
+getFunctionNames <- function(dataset = NULL){
+  # Show which dataset options they can be
+  dataset_possibilities <- c("interest rates", "debt", "balance sheet")
+  
+  # Show the names
+  names <- c("getUnfilteredData()", "filterDate()", "securityType()", "individualSecurities()", "filterPercentage()", "filterBalanceSheet()")
+  
+  # Show the arguments
+  arguments <- c("data", "data, date, operator", "vec", "vec", "percentage, operator", "account_types, line_items, operator")
+  
+  # Show default values of functions
+  default_values <- c("interest rates", "interest rates, NULL, NULL", "NULL", "NULL", "NULL, NULL", "NULL, NULL, or")
+  
+  # Show the options user has for values
+  value_options <- c("interest rates, debt, balance sheet", "interest rates, debt, balance sheet // date in 'yyyy-mm-dd' format // lt, gt, lte , gte, eq", "look at getSecurityList('security type') for options", "look at getSecurityList('specific securities') for options", "any float between 0 and 100 // lt, gt, lte, gte, eq", "look at getAccountTypes('account') for options // look at getAccountTypes('line items') for options // or, and")
+  
+  # Show corresponding helper functions users can look at if stuck
+  helper_function <- c("NULL", "NULL", "getSecurityList('security type')", "getSecurityList('specific securities')", "NULL", "getAccountTypes('account'), getAccountTypes('line items')")
+  
+  # Show which datasets are involved in a function
+  datasets_involved <- c("interest rates, debt, balance sheet", "interest rates, debt, balance sheet", "interest rates", "interest rates", "interest rates", "balance sheet")
+  
+  # Make table showing these values
+  helper_table <- data.frame(names, arguments, default_values, value_options, helper_function, datasets_involved)
+  
+  # Return the correct corresponding helper table
+  if(is.null(dataset) == TRUE){
+    return_tibble <- as_tibble(helper_table)
+  }
+  else if(all(dataset %in% dataset_possibilities) == TRUE){
+    return_tibble <- helper_table %>% 
+      filter(str_detect(datasets_involved, paste(dataset[1], dataset[2], dataset[3], sep = "|"))) %>%
+      as_tibble()
+  }
+  else {
+    stop("Must put in a dataset value that works. The options are 'interest rates', 'debt', or 'balance sheet'. You may put in more than one value with the c() function. The default value is NULL which returns all the functions from all the data sets.")
+  }
+  return(return_tibble)
+}
+```
+
+## `chooseDataset()`
+
+This will be our last function we will have. This is a wrapper function that allows the user to choose which data set they want and the filters they want applied to it. This will make it easier on the user to get data faster rather than trying to surfing for the correct function. In the options for this function, please put the appropriate arguments that would be used in the other corresponding function if used separately.
+```{r choose data}
+chooseDataset <- function(func, ...){
+  if(func == "getUnfilteredData"){
+    outputData <- getUnfilteredData(...)
+  }
+  else if(func == "filterDate"){
+    outputData <- filterDate(...)
+  }
+  else if(func == "securityType"){
+    outputData <- securityType(...)
+  }
+  else if(func == "individualSecurities"){
+    outputData <- individualSecurities(...)
+  }
+  else if(func == "filterPercentage"){
+    outputData <- filterPercentage(...)
+  }
+  else if(func == "filterBalanceSheet"){
+    outputData <- filterBalanceSheet(...)
+  }
+  else{
+    stop("Please choose an acceptable named function. The helper file for the list of named function can be found by using the function getFunctionNames(). This will also show you the correct corresponding arguments.")
+  }
+  
+  # Lastly return the data from the corresponding function
+  return(outputData)
+}
+```
