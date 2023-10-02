@@ -116,6 +116,15 @@ getUnfilteredData <- function(data = "interest rates"){
   
   tibble <- as_tibble(contents$data)
   
+  # Fix the TotalMarketable issue in the security_type_desc column if reading in the interest rates data set
+  if("security_desc" %in% colnames(tibble)){
+    tibble <- tibble %>% 
+      mutate(security_desc = ifelse(as.character(security_desc) == "TotalMarketable", "Total Marketable", as.character(security_desc)))
+  }
+  else {
+    tibble <- tibble
+  }
+  
   # Return tibble
   return(tibble)
 }
@@ -149,6 +158,15 @@ filterDate <- function(data = "interest rates", date = NULL, operator = NULL){
   
   tibble <- as_tibble(contents$data)
   
+  # Fix the TotalMarketable issue in the security_type_desc column if reading in the interest rates data set
+  if("security_desc" %in% colnames(tibble)){
+    tibble <- tibble %>% 
+      mutate(security_desc = ifelse(as.character(security_desc) == "TotalMarketable", "Total Marketable", as.character(security_desc)))
+  }
+  else {
+    tibble <- tibble
+  }
+  
   # Return tibble
   return(tibble)
 }
@@ -177,6 +195,15 @@ securityType <- function(vec = NULL){
   
   tibble <- as_tibble(contents$data)
   
+  # Fix the TotalMarketable issue in the security_type_desc column if reading in the interest rates data set
+  if("security_desc" %in% colnames(tibble)){
+    tibble <- tibble %>% 
+      mutate(security_desc = ifelse(as.character(security_desc) == "TotalMarketable", "Total Marketable", as.character(security_desc)))
+  }
+  else {
+    tibble <- tibble
+  }
+  
   # Return tibble
   return(tibble)
 }
@@ -203,6 +230,15 @@ individualSecurities <- function(vec = NULL){
   
   tibble <- as_tibble(contents$data)
   
+  # Fix the TotalMarketable issue in the security_type_desc column if reading in the interest rates data set
+  if("security_desc" %in% colnames(tibble)){
+    tibble <- tibble %>% 
+      mutate(security_desc = ifelse(as.character(security_desc) == "TotalMarketable", "Total Marketable", as.character(security_desc)))
+  }
+  else {
+    tibble <- tibble
+  }
+  
   # Return tibble
   return(tibble)
 }
@@ -226,6 +262,15 @@ filterPercentage <- function(percentage = NULL, operator = NULL){
   contents <- jsonlite::fromJSON(rawToChar(jsonData$content))
   
   tibble <- as_tibble(contents$data)
+  
+  # Fix the TotalMarketable issue in the security_type_desc column if reading in the interest rates data set
+  if("security_desc" %in% colnames(tibble)){
+  tibble <- tibble %>% 
+    mutate(security_desc = ifelse(as.character(security_desc) == "TotalMarketable", "Total Marketable", as.character(security_desc)))
+  }
+  else {
+    tibble <- tibble
+  }
   
   # Return tibble
   return(tibble)
@@ -337,7 +382,7 @@ getFunctionNames <- function(dataset = NULL){
 
 This will be our last function we will have. This is a wrapper function that allows the user to choose which data set they want and the filters they want applied to it. This will make it easier on the user to get data faster rather than trying to surfing for the correct function. In the options for this function, please put the appropriate arguments that would be used in the other corresponding function if used separately.
 ```{r choose data}
-chooseDataset <- function(func, ...){
+chooseDataset <- function(func = "getUnfilteredData", ...){
   if(func == "getUnfilteredData"){
     outputData <- getUnfilteredData(...)
   }
@@ -357,10 +402,235 @@ chooseDataset <- function(func, ...){
     outputData <- filterBalanceSheet(...)
   }
   else{
-    stop("Please choose an acceptable named function. The helper file for the list of named function can be found by using the function getFunctionNames(). This will also show you the correct corresponding arguments.")
+    stop("Please choose an acceptable named function. The helper file for the list of named function can be found by using the function getFunctionNames(). This will also show you the correct corresponding arguments. The default is the getUnfilteredData function argument.")
   }
   
   # Lastly return the data from the corresponding function
   return(outputData)
 }
 ```
+
+# Exploratory Data Analysis
+
+We have now created functions to interact with our API data sources. We are now going to interact with them. Some questions we are hoping to answer include:
+
+- Which securities are the best to invest in? How they do against inflation?
+- Does the month have an impact on the interest rates offered?
+- Does the fiscal year's ending balance sheet in net assets minus liabilities (or known as equity) have an impact on interest rates for the upcoming year?
+
+Now that we have asked some questions, let us dive into our data. First we will retrieve the data using our wrapper function `chooseDataset()`. We want to first choose to get the unfiltered data of the interest rates data and then we will choose to grab the unfiltered data of the balance sheet data. We will do this below.
+```{r get data}
+# Get interest rates data
+interestRates <- chooseDataset(func = "getUnfilteredData", data = "interest rates")
+interestRates
+
+# Get balance sheet data
+balanceSheet <- chooseDataset(func = "getUnfilteredData", data = "balance sheet")
+balanceSheet
+```
+
+First, through inspection of the data, null values could be present, which is something we do not want. We should use our function `removeNulls()` to get our updated data sets without these values.
+```{r remove nulls from all data}
+interestRates <- removeNulls(interestRates)
+interestRates
+
+balanceSheet <- removeNulls(balanceSheet)
+balanceSheet
+```
+
+It was important to remove these null values as null percentages of interest rates or null values for the balance sheet item is not going to really help us in determining any connections or values to look at.
+
+Now we are going to notice that our data is all in character format, which is not what we want. We actually want this data to be in the correct form, so we are going to use our helper function `convertToCorrectType()` to get this data in the right format. We are also going to use `lapply()` to look at each column and once we get this list in the right format, we will convert back to our tibble.
+```{r convert column types}
+# Convert balance sheet
+balanceSheet <- as_tibble(lapply(balanceSheet, convertToCorrectType))
+balanceSheet
+
+# Convert interest rates
+interestRates <- as_tibble(lapply(interestRates, convertToCorrectType))
+interestRates
+```
+
+Now that our data is in the correct form we can proceed with it doing our analysis.
+
+The first thing we are going to do is creating some contingency tables that will allow us to better understand some things about how securities are offered from the United States government. First, I want to take a look at how many of each security type is offered by the US government. Are there more marketable than Non-marketable? What other types are offered? We can see this below.
+```{r number securities offered}
+uniqueSecurities <- interestRates %>% select(security_type_desc, security_desc) %>% distinct()
+table(uniqueSecurities$security_type_desc)
+```
+
+As we can see from this table there's only `r length(table(uniqueSecurities$security_type_desc))` different types of securities offered by the United States. The first is the `r names(table(uniqueSecurities$security_type_desc)[1])` in which there is only `r table(uniqueSecurities$security_type_desc)[1]` of them. We can also see there are `r names(table(uniqueSecurities$security_type_desc)[2])` Securities in which there are only `r table(uniqueSecurities$security_type_desc)[2]` of them and `r names(table(uniqueSecurities$security_type_desc)[3])` Securities in which there are only `r table(uniqueSecurities$security_type_desc)[3]` of them. As, we can see the most types of securities offered are `r max(names(table(uniqueSecurities$security_type_desc)))` with `r names(sort(desc(table(uniqueSecurities$security_type_desc))))[2]` being right behind.
+
+Another thing I am curious to look at is if the securities offered are providing a profit to our investment. Now most people will say "yes, of course" because interest rates are always positive. We will show this below to back up this claim.
+```{r positive interest rates}
+# Mutate data to include column called "positive" and observations being "yes" if above zero and "no" if less than 0, "neutral" if 0, "error" if not any
+positiveInterest <- interestRates %>%
+  mutate(positive = ifelse(avg_interest_rate_amt > 0, "yes", 
+                           ifelse(avg_interest_rate_amt < 0, "no", 
+                                  ifelse(avg_interest_rate_amt == 0, "neutral", "error"))))
+
+table(positiveInterest$positive)
+```
+
+As we can see the vast majority of the time interest rates will tend to a positive amount so you are making money. There was never a time where the interest rate was negative so you cannot lose money on your investment. But as an investor, I might try to beat the inflation rates. I am curious how many investments beat this inflation rate. We are going to find out by pulling inflation data from [World Data](https://www.worlddata.info/america/usa/inflation-rates.php) which provides all kinds of inflation rate data from all over the world. We will scrape the table that shows the inflation rates and only select the column with the United States.
+```{r scrape inflation data}
+# Get the webpage first
+webpage <- rvest::read_html("https://www.worlddata.info/america/usa/inflation-rates.php")
+
+# Now save the data as a tibble
+inflationData <- rvest::html_table(rvest::html_nodes(webpage, "table"))[[1]]
+
+# Now select only the year and the US
+inflationData <- inflationData %>% 
+  select(Year, `United States of America`) %>%
+  rename(year = Year, inflationRate = `United States of America`)
+
+# Strip the percentage signs from inflationRate
+
+inflationData$inflationRate <- gsub(" %", "", inflationData$inflationRate)
+
+# Now use our convertToCorrectType() function to get it all in correct type
+inflationData$inflationRate <- convertToCorrectType(inflationData$inflationRate)
+
+# Show the output
+inflationData
+```
+
+Now that we have our inflation data, we can now merge this with our interest rates data to do some comparisons on interest rates to inflation rates. Please note, when making this vignette the inflation rate for 2023 was not confirmed so all data for 2023 interest rates was not used here.
+```{r combine inflation rate to interest rate}
+interestAndInflationRates <- inner_join(interestRates, inflationData, by = c("record_calendar_year" = "year"))
+
+interestAndInflationRates
+```
+
+Now that we have both data points, let us look at how the securities were performing against the inflation rates. First, we will look at how all securities do.
+```{r interest vs inflation rates all}
+# Create new column outPerformInflation; "yes" if interest is higher than inflation, "no" if inflation is higher than interest, "same" if both are equal, and lastly "error" if something is not right
+interestAndInflationRates <- interestAndInflationRates %>%
+  mutate(outPerformInflation = ifelse(avg_interest_rate_amt > inflationRate, "yes", 
+                                      ifelse(avg_interest_rate_amt < inflationRate, "no",
+                                             ifelse(avg_interest_rate_amt == inflationRate, "same", "error"))))
+
+# Make table showing the breakdown of all securities
+table(interestAndInflationRates$outPerformInflation)
+
+# Show percentages
+prop.table(table(interestAndInflationRates$outPerformInflation))
+```
+
+As we can see, it seems that securities as a whole tend to beat the inflation rate for their corresponding year. So it seems to be that investing is a wise move. But we should now look at how each security type does against inflation. Maybe there is a type of security that is doing better against inflation?
+```{r interest vs inflation rates types}
+# Look at security type
+securitiesTypeTable <- table(interestAndInflationRates$security_type_desc, interestAndInflationRates$outPerformInflation) 
+
+# Show number output
+securitiesTypeTable
+
+# Show as percentage rates for each security type
+prop.table(securitiesTypeTable, margin = 1)
+```
+
+Some interesting points to note here. We can see that the Non-marketable securities tend to offer more options in investments that beat inflation, but as a proportion of options offered the Interest-bearing Debt securities tend to outperform the inflation rate better than anything else. But we will do one last more in-depth analysis by looking at how each individual security does against inflation. Maybe there is a specific security that is doing better against inflation than others?
+```{r interest vs inflation rates individual}
+# Look at individual securities
+individualSecuritiesTable <- table(interestAndInflationRates$security_desc, interestAndInflationRates$outPerformInflation) 
+
+# Show number output
+individualSecuritiesTable
+
+# Show as percentage rates for each security
+prop.table(individualSecuritiesTable, margin = 1)
+```
+
+Some things to point out here. Some securities offered like Treasury Inflation-Indexed Bonds and Notes, Foreign Series, and Domestic Series. Though some of these highly successful securities have been around for a limited amount of time which might skew it. The same is true for the lower "successful" securities that have not done as well against inflation. We can see that TIPS, FRNs, and Hope Bonds are some that do not do as well. As an investor, you might want to make sure there is a lot of data backing this up. For myself, I might want to only look at securities that have 10 years of data (or 120 observations since it is by month). So we will filter here to make sure they have 120 observations and see what securities do the best against inflation now.
+```{r interest vs inflation rates individual filtered}
+# Get counts of securities
+meetsCriteria <- interestAndInflationRates %>%
+  group_by(security_desc) %>%
+  count() %>%
+  filter(n >= 120)
+
+# Get list that meet criteria
+acceptableList <- unique(meetsCriteria$security_desc)
+
+# Get filtered data with acceptable securities
+filteredData <- interestAndInflationRates %>%
+  filter(security_desc %in% acceptableList)
+
+# Look at individual securities
+individualSecuritiesTableUpdated <- table(filteredData$security_desc, filteredData$outPerformInflation) 
+
+# Show number output
+individualSecuritiesTableUpdated
+
+# Show as percentage rates for each security
+prop.table(individualSecuritiesTableUpdated, margin = 1)
+```
+
+As we can see here, the securities with the best "success" rates against inflation are Domestic Series, Federal Financial Bank, Foreign Series, and Treasury Bonds. The securities with the best "success" rates against inflation are Government Account Series Inflation Securities, Treasury Bills, and TIPS. This information really helps us in understanding what kind of investments we might want to initially look into.
+
+Continuing on the track of how well securities do against inflation rates, let us create a new variable called `rateDifference` which will be positive if the interest rate is higher than the inflation rate and negative if vice versa. After creating this, we are going to do a 5 number summary to see what the breakdown of this difference is. 
+```{r rate differences}
+# Create new variable
+interestAndInflationRates <- interestAndInflationRates %>%
+  mutate(rateDifference = avg_interest_rate_amt - inflationRate)
+
+# Show 5 number summary
+summary(interestAndInflationRates$rateDifference)
+```
+
+As we can see, on average we are getting an interest rate that is about `r round(summary(interestAndInflationRates$rateDifference)[[4]], 3)`% higher than the inflation rate. We can also see that there are some variability in this though with the worst being about `r round(summary(-1 * interestAndInflationRates$rateDifference)[[1]], 3)`% lower interest rate than inflation rate and the best being about `r round(summary(interestAndInflationRates$rateDifference)[[6]], 3)`% higher interest rate than inflation rate.
+
+Now if we wanted to look at this since January 2013 (or the last 10 years of securities and inflation data) we could. We might want to do this to try to see how things are currently looking Let us use our API functions to get this data range (as we want to show users how to filter from the API rather than filtering in R) and then we will combine with the inflation data and show this difference.
+```{r look at last 10 years of net rate gain}
+# Get interest rates data
+interestRatesLast10 <- chooseDataset(func = "filterDate", "interest rates", "2013-01-01", "gte")
+
+# Remove nulls and get in right format
+interestRatesLast10 <- as_tibble(lapply(removeNulls(interestRatesLast10), convertToCorrectType))
+
+# Combine with inflation data
+interestAndInflationRatesLast10 <- inner_join(interestRatesLast10, inflationData, by = c("record_calendar_year" = "year"))
+
+# Create difference in interest and inflation numbers
+interestAndInflationRatesLast10 <- interestAndInflationRatesLast10 %>%
+  mutate(rateDifference = avg_interest_rate_amt - inflationRate)
+
+# Show the summary
+summary(interestAndInflationRatesLast10$rateDifference)
+```
+
+Now with this summary, we can see that the difference has not been as nice as it was when we looked at all of the data. Maybe the pandemic had something to do with this? Or possibly the government is offerring less friendly rates as it did before. The new average we are getting an interest rate that is about `r round(summary(interestAndInflationRatesLast10$rateDifference)[[4]], 3)`% higher than the inflation rate. This is still slightly better than being net even, but it makes these investments as a whole less attractive than before. Especially with the variability, we are not as sure that we are actually going to be making a guaranteed "positive return" after inflation. 
+
+Let us dive deeper into this and see how the different security types and individual securities are doing. First we will examine the security types and get the average (shown by the mean) and the variability (shown by getting the standard deviation) and see how they compare.
+```{r compare security types over last 10}
+interestAndInflationRatesLast10 %>%
+  group_by(security_type_desc) %>%
+  summarize(average = mean(rateDifference),
+            standard_deviation = sd(rateDifference))
+```
+
+It is interesting to see that the average for both the Interest-bearing Debt and Marketable securities are both at a net loss. The only one in the money (or at a net positive) are the Non-marketable securities. This makes sense when we think about it. Non-marketable securities aren't as readily available and much harder to get. The investment amount (or principal) is usually much higher so the reward in percentage should be higher with the elevated risk. The variability being higher also makes sense because these securities are less regulated and thus, probably have more range for what is being offered. Non-marketable securities are also sold over the counter, which means that they are only available via private transactions that make it harder for the average person to get. After showing how great it looked to invest in the US Treasury, now it is looking less appealing. 
+
+Maybe there are individual securities that are doing better. We are going to do the same thing as before but this time we are going to make sure that the securities we observe have been around for the at least the last 10 years (or 120 months).
+```{r compare individual securities over last 10}
+# criteria of being around at least last 10 years
+meetsCriteria <- interestAndInflationRatesLast10 %>%
+  group_by(security_type_desc, security_desc) %>%
+  count() %>%
+  filter(n >= 120)
+
+# In the acceptable list
+acceptable_list <- unique(meetsCriteria$security_desc)
+
+# Find mean and sd of acceptable securities
+interestAndInflationRatesLast10 %>%
+  filter(security_desc %in% acceptable_list) %>%
+  group_by(security_type_desc, security_desc) %>%
+  summarize(average = mean(rateDifference),
+            standard_deviation = sd(rateDifference))
+```
+
+As we can see here the Treasury Bonds and Federal Financing Bank options are not bad for Marketable securities. We can also see that if we are fortunate enough to invest in Non-marketable securities the best ones against inflation are Domestic Series and Foreign Series securities.
+
+To 
