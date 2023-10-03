@@ -1528,7 +1528,7 @@ rates and interest rates in later time so we can cash in if we see a
 rate above expected
 
 ``` r
-interestAndInflationRates %>%
+animatedPlot <- interestAndInflationRates %>%
   ggplot(aes(x = inflationRate, y = avg_interest_rate_amt, color = security_type_desc)) +
   geom_point(alpha = 0.5, show.legend = FALSE) +
   facet_wrap(vars(security_type_desc), nrow = 3) + 
@@ -1541,11 +1541,26 @@ interestAndInflationRates %>%
         legend.title = element_text(size = 0.5),
         axis.text.y = element_text(size = 0.7)) +
   guides(color = guide_legend(override.aes = list(size = 0.5))) +
+  theme_bw() +
   labs(title = 'How the Inflation Rates and Interest Rates were in the Year: {frame_time}', 
        x = 'Inflation Rate \n(in percent)', 
        y = 'Interest Rate Offerred \n(in percent)') +
-  transition_manual(record_calendar_year) +
-  theme_bw()
+  transition_time(record_calendar_year) +
+  ease_aes()
+
+# Save the animated plot
+#gganimate(animatedPlot) + 
+  #anim_save("animated_plot.gif")
+
+animate(animatedPlot, duration = 5, fps = 20, width = 200, height = 200, renderer = gifski_renderer())
 ```
 
-    ## NULL
+<img src="README_files/figure-gfm/looking at if the two rates affect each other-1.gif" width="200%" height="200%" />
+
+``` r
+gganimate::anim_save("animated_plot.gif")
+```
+
+<img src="README_files/figure-gfm/looking at if the two rates affect each other-2.png" width="200%" height="200%" />
+
+![](animated_plot.gif)
