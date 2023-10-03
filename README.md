@@ -1369,6 +1369,9 @@ deficiencyAndRatesData %>%
         axis.title.y.left = element_text(size = 6),
         axis.title.y.right = element_text(size = 6),
         axis.text.y.left = element_text(size = 6),
+        legend.key.size = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.title = element_text(size = 6),
         axis.text.y.right = element_text(size = 6)) +
   labs(color = "Type of Security",
     title = "Balance Deficiency Affecting Net Interest Rates",
@@ -1432,6 +1435,9 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = record_calendar_year)) +
         axis.title.y.left = element_text(size = 6),
         axis.title.y.right = element_text(size = 6),
         axis.text.y.left = element_text(size = 6),
+        legend.key.size = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.title = element_text(size = 6),
         axis.text.y.right = element_text(size = 6)) +
   facet_wrap(vars(security_type_desc)) +
   theme_bw()
@@ -1487,6 +1493,9 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = named_month)) +
         axis.text.x = element_text(size = 6),
         axis.title.x = element_text(size = 6),
         axis.title.y = element_text(size = 6),
+        legend.key.size = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.title = element_text(size = 6),
         axis.text.y = element_text(size = 6)) +
   facet_wrap(vars(security_type_desc)) +
   theme_bw()
@@ -1524,6 +1533,9 @@ interestAndInflationRates %>%
         axis.text.x = element_text(size = 6),
         axis.title.x = element_text(size = 6),
         axis.title.y = element_text(size = 6),
+        legend.key.size = element_text(size = 6),
+        legend.text = element_text(size = 6),
+        legend.title = element_text(size = 6),
         axis.text.y = element_text(size = 6)) +
   labs(title = 'How the Inflation Rates and Interest Rates were in the Year: {frame_time}', 
        x = 'Inflation Rate \n(in percent)', 
