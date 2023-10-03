@@ -1474,8 +1474,8 @@ with this.
 ratesNamedMonth <- interestAndInflationRates
 
 # Turn into the month name; reorder levels for graph
-ratesNamedMonth$named_month <- month.name[ratesNamedMonth$record_calendar_month]
-ratesNamedMonth$named_month <- factor(ratesNamedMonth$named_month, levels = month.name)
+ratesNamedMonth$named_month <- month.abb[ratesNamedMonth$record_calendar_month]
+ratesNamedMonth$named_month <- factor(ratesNamedMonth$named_month, levels = month.abb)
 
 # Split the data
 df <- split(ratesNamedMonth, f = ratesNamedMonth$security_type_desc)
