@@ -16,12 +16,16 @@ To use the functions for interacting with the Fed Treasury API, I used the follo
 - [`tidyverse`](https://www.tidyverse.org/): There are many useful features for data manipulation and visualization within the group of packages associated with the `tidyverse` universe.
 - [`jsonlite`](https://cran.r-project.org/web/packages/jsonlite/): Allows API interaction to get the necessary data we are going to use in this document.
 - [`httr`](https://cran.r-project.org/web/packages/httr/index.html): Allows us to get our data from the desired URL.
+- [`gridExtra`](https://cran.r-project.org/web/packages/gridExtra/gridExtra.pdf): Allows plots to be arranged in a tidy way
+- [`gganimate`](https://gganimate.com/): A way to make animated plots that might change over a particular variable (used a lot for change over time)
 
 ```{r load libraries needed, echo=FALSE}
 # Load in the packages.
 library(tidyverse)
 library(jsonlite)
 library(httr)
+library(gridExtra)
+library(gganimate)
 ```
 
 # API Interaction Functions
@@ -78,7 +82,7 @@ getSecurityList <- function(x = "security type"){
 ## `getAccountTypes()`
 
 This function acts as a helper function for the user as we can now get the list of Account Type Descriptions for the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets) (so if we want to look at Assets, Liabilities, etc.) or if we want to subset even further later on, we can get the exact line item names that are available (example: "Accounts payable", "Interest payable", etc.)
-```{r security names function}
+```{r account names function}
 getAccountTypes <- function(x = "account"){
   # Get the data in the correct format to get the list of unique values; limit is 4500 which includes all data
   jsonData <- httr::GET("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/balance_sheets?limit=9999")
@@ -415,11 +419,11 @@ chooseDataset <- function(func = "getUnfilteredData", ...){
 We have now created functions to interact with our API data sources. We are now going to interact with them. Some questions we are hoping to answer include:
 
 - Which securities are the best to invest in? How they do against inflation?
+- Does the fiscal year's balance sheet in assets minus liabilities (or known as net assets) have an impact on interest rates?
 - Does the month have an impact on the interest rates offered?
-- Does the fiscal year's ending balance sheet in net assets minus liabilities (or known as equity) have an impact on interest rates for the upcoming year?
 
 Now that we have asked some questions, let us dive into our data. First we will retrieve the data using our wrapper function `chooseDataset()`. We want to first choose to get the unfiltered data of the interest rates data and then we will choose to grab the unfiltered data of the balance sheet data. We will do this below.
-```{r get data}
+```{r read in needed data}
 # Get interest rates data
 interestRates <- chooseDataset(func = "getUnfilteredData", data = "interest rates")
 interestRates
@@ -631,6 +635,182 @@ interestAndInflationRatesLast10 %>%
             standard_deviation = sd(rateDifference))
 ```
 
-As we can see here the Treasury Bonds and Federal Financing Bank options are not bad for Marketable securities. We can also see that if we are fortunate enough to invest in Non-marketable securities the best ones against inflation are Domestic Series and Foreign Series securities.
+As we can see here the Treasury Bonds and Federal Financing Bank options are not bad for Marketable securities. We can also see that if we are fortunate enough to invest in Non-marketable securities the best ones against inflation are Domestic Series and Foreign Series securities. For most regular investors, I would advice taking a look at Treasury Bonds and Federal Financing Bank securities, if interested in investing in the United States Treasury.
 
-To 
+To pivot slightly, I just wanted to take a quick look at the United States balance sheet. First let us take a look at how the US fairs with its different accounts at the fiscal year's end. The position of each category is in billions of US dollars.
+```{r balance sheet compare}
+balanceSheetTotals <- balanceSheet %>%
+  group_by(record_date, account_desc) %>%
+  summarize(total = sum(position_bil_amt)) %>%
+  arrange(desc(record_date))
+
+balanceSheetTotals
+```
+
+This shows that the US Treasury's liabilities are much higher than its assets. Usually this is not a good thing. In the accounting word, we call this *asset deficiency*. This is a situation where a company's liabilities exceed its assets and is a sign of financial distress and indicates that a company may default on its obligations to creditors and may be headed for bankruptcy. This is why the US Government has to keep raising the [debt ceiling](https://www.cfr.org/backgrounder/what-happens-when-us-hits-its-debt-ceiling) in order to not default. Despite this, the United States has been considered on of the safest investments as up until this point, it has never defaulted on a loan payment. 
+
+Something we might want to look at is what is this difference between assets and liabilities over time and is there a cause for concern? As investors, we want to make sure where we are putting our money is safe. The United States has been considered a "risk-free" investment, but has the time come for this change? Let us take a look at the growing deficiency between the assets and liabilities over time. We are going to show this as a line graph over time.
+```{r growing deficiencies}
+# Get the deficiency amount
+balanceSheetDeficiency <- balanceSheetTotals %>%
+  pivot_wider(names_from = account_desc, values_from = total) %>%
+  mutate(Liabilities = ifelse(is.na(Liabilities), `Liabilities and net position`, Liabilities),
+         deficiency = Liabilities - Assets) %>%
+  rename(assets = Assets, liabilities = Liabilities) %>%
+  dplyr::select(record_date, assets, liabilities, deficiency)
+
+# Create line graph
+balanceSheetDeficiency %>%
+  ggplot(aes(x = record_date, y = deficiency)) +
+  geom_line(color = "green") + 
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Fiscal Year",   
+       y = "Balance Sheet Deficiency (in Trillions of USD)",   
+       title = "The Balance Sheet Deficiency of the United States Treasury") +
+  theme_bw()
+```
+
+While we are hoping for the deficiency problem to get better, it is actually getting worse. It seems to be growing close to an exponential pace now. Since 2010, it has more than doubled and we can see how rapidly it rises since 2020 with the pandemic. There might be a slight cause for concern. Obviously, if this was a business I would recommend not to invest in it. But since it is the United States Treasury, it might be wishful thinking but as of right now I would only monitor the situation and not panic yet.
+
+Now adding to our knowledge previously discussed about interest rates, let us take a look at how the deficiency continuing to grow affects the types of securities interest rates on average. Again when looking at "interest rates", we want to see how it is performing against inflation to see if that "risk-free" profit is still there or if we are losing our to inflation and should look at other investments. Our line will show the deficiency and then the colored points will show this net interest rate (remember this is the interest rate offerred minus the inflation rate) with the colors representing the different security types.
+```{r compare rates to deficiency}
+# First get the year of the budget so we can compare to the rate
+balanceSheetDeficiencyUpdated <- balanceSheetDeficiency %>%
+  mutate(year = as.numeric(substr(record_date, 1, 4))) %>%
+  ungroup() %>%
+  dplyr::select(year, deficiency)
+
+# Summarize the data to find average security type net rates
+netRatesType <- interestAndInflationRates %>%
+  group_by(record_calendar_year, security_type_desc) %>%
+  summarize(averageNetRate = mean(rateDifference)) %>%
+  ungroup()
+
+# Merge the data together
+deficiencyAndRatesData <- inner_join(netRatesType, balanceSheetDeficiencyUpdated, by = c("record_calendar_year" = "year"))
+
+# Make the graph of both measurements
+# Set graph limits
+ylim_defic <- c(0, max(deficiencyAndRatesData$deficiency) + 10000)
+ylim_rate <- c(min(deficiencyAndRatesData$averageNetRate) - 0.2, max(deficiencyAndRatesData$averageNetRate) + 0.2)
+
+b <- diff(ylim_defic)/diff(ylim_rate)
+a <- ylim_defic[1] - b*ylim_rate[1]
+
+# Make scaled graph
+deficiencyAndRatesData %>%
+  ggplot(aes(x = record_calendar_year)) +
+  geom_line(aes(y = deficiency)) +
+  geom_point(aes(y = a + averageNetRate*b, 
+                 color = security_type_desc),
+             alpha = 0.4,
+             position = "jitter") +
+  scale_y_continuous(
+    labels = scales::comma,
+    name = "Balance Sheet Deficiency (in Trillions of USD)",
+    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate (in percent return)")
+  ) +
+  labs(color = "Type of Security",
+    title = "How the Balance Deficiency Affects Net Interest Rates for Types of Securities",
+    x = "Fiscal Year") +
+  theme_bw()
+```
+
+Here we can see that the net interest rates are decreasing over time. Is the budget deficiency to blame? Based on the correlation between the variables being `r cor(deficiencyAndRatesData$deficiency, deficiencyAndRatesData$averageNetRate)` which is moderately strong so maybe this is something to look into and really see if this is going to continue to produce lower net interest rates with more in depth analysis.
+
+Despite recent net returns being negative, are there some individual securities that are performing better than expected. That is what we are going to look at here, while comparing it to the Balance Deficiency. Is there a security that looks to be thriving as the deficit increases? These are all questions we hope to gloss over.
+```{r compare individual rates to deficiency}
+# Summarize the data to find average security type net rates
+netRatesIndividual <- interestAndInflationRates %>%
+  group_by(record_calendar_year, security_type_desc, security_desc) %>%
+  summarize(averageNetRate = mean(rateDifference)) %>%
+  ungroup()
+
+# Merge the data together
+deficiencyAndRatesIndividualData <- inner_join(netRatesIndividual, balanceSheetDeficiencyUpdated, by = c("record_calendar_year" = "year"))
+
+# Make the graph of both measurements
+# Set graph limits
+ylim_defic <- c(0, max(deficiencyAndRatesIndividualData$deficiency) + 10000)
+ylim_rate <- c(min(deficiencyAndRatesIndividualData$averageNetRate) - 0.2, max(deficiencyAndRatesIndividualData$averageNetRate) + 0.2)
+
+b <- diff(ylim_defic)/diff(ylim_rate)
+a <- ylim_defic[1] - b*ylim_rate[1]
+
+# Split the data
+df <- split(deficiencyAndRatesIndividualData, f = deficiencyAndRatesIndividualData$security_type_desc)
+
+# Make scaled graph
+p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = record_calendar_year)) +
+  geom_line(aes(y = deficiency)) +
+  geom_point(aes(y = a + averageNetRate*b, 
+                 color = security_desc),
+             alpha = 0.3,
+             position = "jitter") +
+  scale_y_continuous(
+    labels = scales::comma,
+    name = "Balance Sheet Deficiency \n(in Trillions of USD)",
+    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate \n(in percent return)")
+  ) +
+  labs(color = "individual Security",
+    title = "How the Balance Deficiency Affects Net Interest Rates for Individual Securities",
+    x = "Fiscal Year") +
+  facet_wrap(vars(security_type_desc)) +
+  theme_bw()
+
+# Do it for each "facet"
+p2 <- p1 %+% df$Marketable
+p3 <- p1 %+% df$`Non-marketable`
+
+# Arrange the plots and get the output we want
+grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+As we can see, the individual securities are taking a hit too. The net rate for each one seems to be going down for the most part. As said before, the Treasury Bills tend to do a little better for Marketable Securities (but they recently have had a net negative return as well) and the Domestic Series, Foreign Series, and United States Savings Inflation Securities have all been doing well from a Non-marketable standpoint if you can be a part of those and seem to still give a nice return despite the downward trend. The reason for this downward trend could be that inflation is at recent historic highs and the interest rates of such securities have not adjusted yet.
+
+One potential correlation we found for looking at net rates has been the Balance Deficiency. The next thing we can look at is the month of when the securities are offered. Maybe it is consistently better to get one in March than December? We should take a look and see if we find a trend with this.
+```{r month to rate comparison}
+# Get Data with months being names not numbers
+ratesNamedMonth <- interestAndInflationRates
+
+# Turn into the month name; reorder levels for graph
+ratesNamedMonth$named_month <- month.name[ratesNamedMonth$record_calendar_month]
+ratesNamedMonth$named_month <- factor(ratesNamedMonth$named_month, levels = month.name)
+
+# Split the data
+df <- split(ratesNamedMonth, f = ratesNamedMonth$security_type_desc)
+
+# Make scaled graph
+p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = named_month)) +
+  geom_point(aes(y = rateDifference, color = security_desc),
+             alpha = 0.3,
+             position = "jitter") +
+  labs(color = "individual Security",
+       title = "How the Net Interest Rate Varies by Month",
+       x = "Fiscal Year",
+       y = "Net Interest Rate (in percent)") +
+  facet_wrap(vars(security_type_desc)) +
+  theme_bw()
+
+# Do it for each "facet"
+p2 <- p1 %+% df$Marketable
+p3 <- p1 %+% df$`Non-marketable`
+
+# Arrange the plots and get the output we want
+grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+From this, there does not seem to be much difference in the net rate from the security dependent on the month. Therefore, initially we can say there is not an optimal time of a given year to maximize our net rate. So from this standpoint, any time is equally good or bad to invest. 
+
+The last thing we are going to look at in our exploratory data analysis is showing how the interest rates and the inflation rates from the US Treasury Securities change over the years so investors know what a fair going rate is, depending on what inflation rate is for a given time. We will try to see if there is a pattern so we can predict the inflation rates and interest rates in later time so we can cash in if we see a rate above expected
+```{r heat map of rates}
+interestAndInflationRates %>%
+  ggplot(aes(x = inflationRate, y = avg_interest_rate_amt, color = security_type_desc)) +
+  geom_point(alpha = 0.5, show.legend = FALSE) +
+  facet_wrap(vars(security_type_desc), nrow = 3) + 
+  labs(title = 'How the Inflation Rates and Interest Rates were in the Year: {frame_time}', 
+       x = 'Inflation Rate (in percent)', 
+       y = 'Interest Rate Offerred (in percent)') +
+  transition_manual(record_calendar_year) +
+  theme_bw()
+```
