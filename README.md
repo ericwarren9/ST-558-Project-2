@@ -1365,6 +1365,9 @@ deficiencyAndRatesData %>%
   ) +
   theme(text = element_text(size = 8),
         axis.text.x = element_text(size = 6),
+        axis.title.x = element_text(size = 6),
+        axis.title.y.left = element_text(size = 6),
+        axis.title.y.right = element_text(size = 6),
         axis.text.y.left = element_text(size = 6),
         axis.text.y.right = element_text(size = 6)) +
   labs(color = "Type of Security",
@@ -1425,6 +1428,9 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = record_calendar_year)) +
        x = "Fiscal Year") +
   theme(text = element_text(size = 8),
         axis.text.x = element_text(size = 6),
+        axis.title.x = element_text(size = 6),
+        axis.title.y.left = element_text(size = 6),
+        axis.title.y.right = element_text(size = 6),
         axis.text.y.left = element_text(size = 6),
         axis.text.y.right = element_text(size = 6)) +
   facet_wrap(vars(security_type_desc)) +
@@ -1476,9 +1482,11 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = named_month)) +
   labs(color = "individual Security",
        title = "Net Interest Rate Varying by Month",
        x = "Fiscal Year",
-       y = "Net Interest Rate (in percent)") +
+       y = "Net Interest Rate \n(in percent)") +
   theme(text = element_text(size = 8),
         axis.text.x = element_text(size = 6),
+        axis.title.x = element_text(size = 6),
+        axis.title.y = element_text(size = 6),
         axis.text.y = element_text(size = 6)) +
   facet_wrap(vars(security_type_desc)) +
   theme_bw()
@@ -1514,10 +1522,12 @@ interestAndInflationRates %>%
   facet_wrap(vars(security_type_desc), nrow = 3) + 
   theme(text = element_text(size = 8),
         axis.text.x = element_text(size = 6),
+        axis.title.x = element_text(size = 6),
+        axis.title.y = element_text(size = 6),
         axis.text.y = element_text(size = 6)) +
   labs(title = 'How the Inflation Rates and Interest Rates were in the Year: {frame_time}', 
-       x = 'Inflation Rate (in percent)', 
-       y = 'Interest Rate Offerred (in percent)') +
+       x = 'Inflation Rate \n(in percent)', 
+       y = 'Interest Rate Offerred \n(in percent)') +
   transition_manual(record_calendar_year) +
   theme_bw()
 ```
