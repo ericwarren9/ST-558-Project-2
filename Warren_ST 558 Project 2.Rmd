@@ -649,8 +649,23 @@ balanceSheetTotals
 
 This shows that the US Treasury's liabilities are much higher than its assets. Usually this is not a good thing. In the accounting word, we call this *asset deficiency*. This is a situation where a company's liabilities exceed its assets and is a sign of financial distress and indicates that a company may default on its obligations to creditors and may be headed for bankruptcy. This is why the US Government has to keep raising the [debt ceiling](https://www.cfr.org/backgrounder/what-happens-when-us-hits-its-debt-ceiling) in order to not default. Despite this, the United States has been considered on of the safest investments as up until this point, it has never defaulted on a loan payment. 
 
-Something we might want to look at is what is this difference between assets and liabilities over time and is there a cause for concern? As investors, we want to make sure where we are putting our money is safe. The United States has been considered a "risk-free" investment, but has the time come for this change? Let us take a look at the growing deficiency between the assets and liabilities over time. We are going to show this as a line graph over time.
-```{r growing deficiencies}
+The first thing we are going to look at is the mean and standard deviation values along with the quartiles for each item on the balance sheet which are assets and liabilities.
+```{r look at summary of balance sheet}
+# Get mean and standard deviations along with quartiles of each account type
+balanceSheet %>%
+  group_by(account_desc) %>%
+  summarize(average = mean(position_bil_amt),
+            standard_deviation = sd(position_bil_amt),
+            minimum = min(position_bil_amt),
+            first_quartile = quantile(position_bil_amt, probs = 0.25),
+            median = median(position_bil_amt),
+            third_quartile = quantile(position_bil_amt, probs = 0.75),
+            maximum = max(position_bil_amt)
+  )
+```
+
+As we can see here is a cause for concern. Our liabilities on average and via the median are both bigger than our assets. When this occurs, we have an asset deficiency, which is not good. Most of the time for a business it is the sign they can declare bankruptcy in the future. Will our country be the next? Let us look at the mean, standard deviation, and the quartiles of this deficit next.
+```{r look at summary of deficiencies}
 # Get the deficiency amount
 balanceSheetDeficiency <- balanceSheetTotals %>%
   pivot_wider(names_from = account_desc, values_from = total) %>%
@@ -659,6 +674,23 @@ balanceSheetDeficiency <- balanceSheetTotals %>%
   rename(assets = Assets, liabilities = Liabilities) %>%
   dplyr::select(record_date, assets, liabilities, deficiency)
 
+as_tibble(
+  list(
+    average = mean(balanceSheetDeficiency$deficiency),
+    standard_deviation = sd(balanceSheetDeficiency$deficiency),
+    min = min(balanceSheetDeficiency$deficiency),
+    first_quartile = quantile(balanceSheetDeficiency$deficiency, probs = 0.25),
+    median = median(balanceSheetDeficiency$deficiency),
+    third_quartile = quantile(balanceSheetDeficiency$deficiency, probs = 0.75),
+    maximum = max(balanceSheetDeficiency$deficiency)
+  )
+)
+```
+
+This summary could be a bit concerning, since the minimum value is positive, meaning we have had a deficit every year. That average is also in billions of US dollars so we have a balance sheet deficit of about `r round(mean(balanceSheetDeficiency$deficiency)/1000, 2)` trillion dollars in a given year. This number eventually goes up to a recently updated deficit of about `r round(max(balanceSheetDeficiency$deficiency)/1000, 2)` trillion dollars. This does not seem like the most reassuring news as something to invest in but for our country is this a cause for hesitation or just normal? Will this lead to any issues?
+
+We should want to look at is what is this difference between assets and liabilities over time and if there is a cause for concern? As investors, we want to make sure where we are putting our money is safe. The United States has been considered a "risk-free" investment, but has the time come for this change? Let us take a look at the growing deficiency between the assets and liabilities over time in the form of a line graph.
+```{r growing deficiencies}
 # Create line graph
 balanceSheetDeficiency %>%
   ggplot(aes(x = record_date, y = deficiency)) +
@@ -872,4 +904,4 @@ Some final thoughts with my analysis. First I would like to try to give formal a
 - Does the month have an impact on the interest rates offered?
   - Answer: As shown, it did not seem the month had an effect on the interest rates offered. So this shows us that any time is a good time to invest if you feel that you are given a good interest rate (or rate of return) on your investment.
   
-I hope this interactive vignette gave you an understanding with how to interact with APIs while also learning a little bit about how the US Treasury Security market works. If you have any questions or comments about this piece, please feel free to reach out to me via [email](ericwarren09@yahoo.com) or connect with me via [LinkedIn](https://www.linkedin.com/in/eric-warren-960037203/).
+I hope this interactive vignette gave you an understanding with how to interact with APIs while also learning a little bit about how the US Treasury Security market works. If you have any questions or comments about this piece, please feel free to reach out to me via [email](mailto:ericwarren09@yahoo.com) or connect with me via [LinkedIn](https://www.linkedin.com/in/eric-warren-960037203/).
