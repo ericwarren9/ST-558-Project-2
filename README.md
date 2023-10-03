@@ -1360,11 +1360,11 @@ deficiencyAndRatesData %>%
              position = "jitter") +
   scale_y_continuous(
     labels = scales::comma,
-    name = "Balance Sheet Deficiency (in Trillions of USD)",
-    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate (in percent return)")
+    name = "Balance Sheet Deficiency \n(in Trillions of USD)",
+    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate (in percent)")
   ) +
   labs(color = "Type of Security",
-    title = "How the Balance Deficiency Affects Net Interest Rates for Types of Securities",
+    title = "Balance Deficiency Affecting Net Interest Rates",
     x = "Fiscal Year") +
   theme_bw()
 ```
@@ -1414,10 +1414,10 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = record_calendar_year)) +
   scale_y_continuous(
     labels = scales::comma,
     name = "Balance Sheet Deficiency \n(in Trillions of USD)",
-    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate \n(in percent return)")
+    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate \n(in percent)")
   ) +
   labs(color = "individual Security",
-    title = "How the Balance Deficiency Affects Net Interest Rates for Individual Securities",
+    title = "Balance Deficiency Affecting Net Interest Rates",
     x = "Fiscal Year") +
   facet_wrap(vars(security_type_desc)) +
   theme_bw()
@@ -1466,7 +1466,7 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = named_month)) +
              alpha = 0.3,
              position = "jitter") +
   labs(color = "individual Security",
-       title = "How the Net Interest Rate Varies by Month",
+       title = "Net Interest Rate Varying by Month",
        x = "Fiscal Year",
        y = "Net Interest Rate (in percent)") +
   facet_wrap(vars(security_type_desc)) +

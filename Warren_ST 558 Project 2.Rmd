@@ -707,11 +707,11 @@ deficiencyAndRatesData %>%
              position = "jitter") +
   scale_y_continuous(
     labels = scales::comma,
-    name = "Balance Sheet Deficiency (in Trillions of USD)",
-    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate (in percent return)")
+    name = "Balance Sheet Deficiency \n(in Trillions of USD)",
+    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate (in percent)")
   ) +
   labs(color = "Type of Security",
-    title = "How the Balance Deficiency Affects Net Interest Rates for Types of Securities",
+    title = "Balance Deficiency Affecting Net Interest Rates",
     x = "Fiscal Year") +
   theme_bw()
 ```
@@ -750,10 +750,10 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = record_calendar_year)) +
   scale_y_continuous(
     labels = scales::comma,
     name = "Balance Sheet Deficiency \n(in Trillions of USD)",
-    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate \n(in percent return)")
+    sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate \n(in percent)")
   ) +
   labs(color = "individual Security",
-    title = "How the Balance Deficiency Affects Net Interest Rates for Individual Securities",
+    title = "Balance Deficiency Affecting Net Interest Rates",
     x = "Fiscal Year") +
   facet_wrap(vars(security_type_desc)) +
   theme_bw()
@@ -786,7 +786,7 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = named_month)) +
              alpha = 0.3,
              position = "jitter") +
   labs(color = "individual Security",
-       title = "How the Net Interest Rate Varies by Month",
+       title = "Net Interest Rate Varying by Month",
        x = "Fiscal Year",
        y = "Net Interest Rate (in percent)") +
   facet_wrap(vars(security_type_desc)) +
@@ -803,7 +803,7 @@ grid.arrange(p1, p2, p3, nrow = 3)
 From this, there does not seem to be much difference in the net rate from the security dependent on the month. Therefore, initially we can say there is not an optimal time of a given year to maximize our net rate. So from this standpoint, any time is equally good or bad to invest. 
 
 The last thing we are going to look at in our exploratory data analysis is showing how the interest rates and the inflation rates from the US Treasury Securities change over the years so investors know what a fair going rate is, depending on what inflation rate is for a given time. We will try to see if there is a pattern so we can predict the inflation rates and interest rates in later time so we can cash in if we see a rate above expected
-```{r heat map of rates}
+```{r looking at if the two rates affect each other}
 interestAndInflationRates %>%
   ggplot(aes(x = inflationRate, y = avg_interest_rate_amt, color = security_type_desc)) +
   geom_point(alpha = 0.5, show.legend = FALSE) +
