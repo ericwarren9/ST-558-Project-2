@@ -1549,10 +1549,7 @@ animatedPlot <- interestAndInflationRates %>%
   ease_aes()
 
 # Save the animated plot
-#gganimate(animatedPlot) + 
-  #anim_save("animated_plot.gif")
-
-animate(animatedPlot, duration = 22, fps = 20, width = 800, height = 800, renderer = gifski_renderer())
+animate(animatedPlot, duration = 22, fps = 25, width = 800, height = 800, renderer = gifski_renderer())
 ```
 
 <img src="README_files/figure-gfm/looking at if the two rates affect each other-1.gif" width="200%" height="200%" />
@@ -1562,5 +1559,3 @@ gganimate::anim_save("animated_plot.gif")
 ```
 
 <img src="README_files/figure-gfm/looking at if the two rates affect each other-2.png" width="200%" height="200%" />
-
-![](animated_plot.gif)
