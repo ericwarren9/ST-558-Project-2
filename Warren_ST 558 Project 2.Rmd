@@ -835,7 +835,7 @@ From this, there does not seem to be much difference in the net rate from the se
 
 The last thing we are going to look at in our exploratory data analysis is showing how the interest rates and the inflation rates from the US Treasury Securities change over the years so investors know what a fair going rate is, depending on what inflation rate is for a given time. We will try to see if there is a pattern so we can predict the inflation rates and interest rates in later time so we can cash in if we see a rate above expected
 ```{r looking at if the two rates affect each other}
-interestAndInflationRates %>%
+animatedPlot <- interestAndInflationRates %>%
   ggplot(aes(x = inflationRate, y = avg_interest_rate_amt, color = security_type_desc)) +
   geom_point(alpha = 0.5, show.legend = FALSE) +
   facet_wrap(vars(security_type_desc), nrow = 3) + 
@@ -853,4 +853,10 @@ interestAndInflationRates %>%
        y = 'Interest Rate Offerred \n(in percent)') +
   transition_manual(record_calendar_year) +
   theme_bw()
+
+# Save the animated plot
+animate(animatedPlot, duration = length(unique(interestAndInflationRates$record_calendar_year)), fps = 20, width = 200, height = 200, renderer = gifski_renderer())
+save_animation(animatedPlot, "animated_plot.gif")
 ```
+
+![](animated_plot.gif)
