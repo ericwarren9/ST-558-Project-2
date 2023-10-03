@@ -4,7 +4,7 @@ author: "Eric Warren"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, out.width = "100%", out.height = "100%")
 ```
 
 This document is a vignette to show how to get data from an [API](https://aws.amazon.com/what-is/api/). To demonstrate, I'll be interacting with the [Fed Treasury API](https://fiscaldata.treasury.gov/api-documentation/), which include the the [Fed Treasury API on Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities), the [Fed Treasury API on Balance Sheets](https://fiscaldata.treasury.gov/datasets/u-s-government-financial-report/balance-sheets), and the [Fed Treasury API on National Debt](https://fiscaldata.treasury.gov/datasets/debt-to-the-penny/debt-to-the-penny). There will be a few functions built to interact with some of the endpoints and then will be followed up by some exploratory data analysis with some of the data that is retrieved from the API.
