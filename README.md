@@ -1606,7 +1606,7 @@ animatedPlot <- interestAndInflationRates %>%
         axis.text.y = element_text(size = 0.7)) +
   guides(color = guide_legend(override.aes = list(size = 0.5))) +
   theme_bw() +
-  labs(title = 'How the Inflation Rates and Interest Rates \nwere in the Year: {frame_time}', 
+  labs(title = 'How the Inflation Rates and Interest Rates were in the Year: {frame_time}', 
        x = 'Inflation Rate (in percent)', 
        y = 'Interest Rate Offerred (in percent)') +
   transition_time(as.integer(record_calendar_year)) +
