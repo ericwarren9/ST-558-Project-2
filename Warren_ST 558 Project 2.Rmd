@@ -710,16 +710,16 @@ deficiencyAndRatesData %>%
     name = "Balance Sheet Deficiency \n(in Trillions of USD)",
     sec.axis = sec_axis(~ (. - a)/b, name="Net Interest Rate (in percent)")
   ) +
-  theme(text = element_text(size = 5),
-        axis.text.x = element_text(size = 2),
-        axis.title.x = element_text(size = 2),
-        axis.title.y.left = element_text(size = 2),
-        axis.title.y.right = element_text(size = 2),
-        axis.text.y.left = element_text(size = 2),
+  theme(text = element_text(size = 0.9),
+        axis.text.x = element_text(size = 0.7),
+        axis.title.x = element_text(size = 0.7),
+        axis.title.y.left = element_text(size = 0.7),
+        axis.title.y.right = element_text(size = 0.7),
+        axis.text.y.left = element_text(size = 0.7),
         legend.key.size = element_text(size = 0.5),
         legend.text = element_text(size = 0.5),
         legend.title = element_text(size = 0.5),
-        axis.text.y.right = element_text(size = 2)) +
+        axis.text.y.right = element_text(size = 0.7)) +
   guides(color = guide_legend(override.aes = list(size = 0.5))) +
   labs(color = "Type of Security",
     title = "Balance Deficiency Affecting Net Interest Rates",
@@ -766,16 +766,16 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = record_calendar_year)) +
   labs(color = "individual Security",
        title = "Balance Deficiency Affecting Net Interest Rates",
        x = "Fiscal Year") +
-  theme(text = element_text(size = 5),
-        axis.text.x = element_text(size = 2),
-        axis.title.x = element_text(size = 2),
-        axis.title.y.left = element_text(size = 2),
-        axis.title.y.right = element_text(size = 2),
-        axis.text.y.left = element_text(size = 2),
+  theme(text = element_text(size = 0.9),
+        axis.text.x = element_text(size = 0.7),
+        axis.title.x = element_text(size = 0.7),
+        axis.title.y.left = element_text(size = 0.7),
+        axis.title.y.right = element_text(size = 0.7),
+        axis.text.y.left = element_text(size = 0.7),
         legend.key.size = element_text(size = 0.5),
         legend.text = element_text(size = 0.5),
         legend.title = element_text(size = 0.5),
-        axis.text.y.right = element_text(size = 2)) +
+        axis.text.y.right = element_text(size = 0.7)) +
   guides(color = guide_legend(override.aes = list(size = 0.5))) +
   facet_wrap(vars(security_type_desc)) +
   theme_bw()
@@ -811,14 +811,14 @@ p1 <- ggplot(df$`Interest-bearing Debt`, aes(x = named_month)) +
        title = "Net Interest Rate Varying by Month",
        x = "Fiscal Year",
        y = "Net Interest Rate \n(in percent)") +
-  theme(text = element_text(size = 5),
-        axis.text.x = element_text(size = 2),
-        axis.title.x = element_text(size = 2),
-        axis.title.y = element_text(size = 2),
+  theme(text = element_text(size = 0.9),
+        axis.text.x = element_text(size = 0.7),
+        axis.title.x = element_text(size = 0.7),
+        axis.title.y = element_text(size = 0.7),
         legend.key.size = element_text(size = 0.5),
         legend.text = element_text(size = 0.5),
         legend.title = element_text(size = 0.5),
-        axis.text.y = element_text(size = 2)) +
+        axis.text.y = element_text(size = 0.7)) +
   guides(color = guide_legend(override.aes = list(size = 0.5))) +
   facet_wrap(vars(security_type_desc)) +
   theme_bw()
@@ -839,14 +839,14 @@ interestAndInflationRates %>%
   ggplot(aes(x = inflationRate, y = avg_interest_rate_amt, color = security_type_desc)) +
   geom_point(alpha = 0.5, show.legend = FALSE) +
   facet_wrap(vars(security_type_desc), nrow = 3) + 
-  theme(text = element_text(size = 5),
-        axis.text.x = element_text(size = 2),
-        axis.title.x = element_text(size = 2),
-        axis.title.y = element_text(size = 2),
+  theme(text = element_text(size = 0.9),
+        axis.text.x = element_text(size = 0.7),
+        axis.title.x = element_text(size = 0.7),
+        axis.title.y = element_text(size = 0.7),
         legend.key.size = element_text(size = 0.5),
         legend.text = element_text(size = 0.5),
         legend.title = element_text(size = 0.5),
-        axis.text.y = element_text(size = 2)) +
+        axis.text.y = element_text(size = 0.7)) +
   guides(color = guide_legend(override.aes = list(size = 0.5))) +
   labs(title = 'How the Inflation Rates and Interest Rates were in the Year: {frame_time}', 
        x = 'Inflation Rate \n(in percent)', 
