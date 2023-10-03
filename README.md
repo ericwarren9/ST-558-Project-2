@@ -1305,7 +1305,7 @@ balanceSheetDeficiency %>%
   theme_bw()
 ```
 
-<img src="README_files/figure-gfm/growing deficiencies-1.png" width="100%" height="100%" />
+<img src="README_files/figure-gfm/growing deficiencies-1.png" width="200%" height="200%" />
 
 While we are hoping for the deficiency problem to get better, it is
 actually getting worse. It seems to be growing close to an exponential
@@ -1369,7 +1369,7 @@ deficiencyAndRatesData %>%
   theme_bw()
 ```
 
-<img src="README_files/figure-gfm/compare rates to deficiency-1.png" width="100%" height="100%" />
+<img src="README_files/figure-gfm/compare rates to deficiency-1.png" width="200%" height="200%" />
 
 Here we can see that the net interest rates are decreasing over time. Is
 the budget deficiency to blame? Based on the correlation between the
@@ -1430,7 +1430,7 @@ p3 <- p1 %+% df$`Non-marketable`
 grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
-<img src="README_files/figure-gfm/compare individual rates to deficiency-1.png" width="100%" height="100%" />
+<img src="README_files/figure-gfm/compare individual rates to deficiency-1.png" width="200%" height="200%" />
 
 As we can see, the individual securities are taking a hit too. The net
 rate for each one seems to be going down for the most part. As said
@@ -1480,7 +1480,7 @@ p3 <- p1 %+% df$`Non-marketable`
 grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
-<img src="README_files/figure-gfm/month to rate comparison-1.png" width="100%" height="100%" />
+<img src="README_files/figure-gfm/month to rate comparison-1.png" width="200%" height="200%" />
 
 From this, there does not seem to be much difference in the net rate
 from the security dependent on the month. Therefore, initially we can
