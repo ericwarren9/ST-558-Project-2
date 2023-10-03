@@ -1543,19 +1543,15 @@ animatedPlot <- interestAndInflationRates %>%
   guides(color = guide_legend(override.aes = list(size = 0.5))) +
   theme_bw() +
   labs(title = 'How the Inflation Rates and Interest Rates \nwere in the Year: {frame_time}', 
-       x = 'Inflation Rate \n(in percent)', 
-       y = 'Interest Rate Offerred \n(in percent)') +
+       x = 'Inflation Rate (in percent)', 
+       y = 'Interest Rate Offerred (in percent)') +
   transition_time(record_calendar_year) +
   ease_aes()
 
-# Save the animated plot
-animate(animatedPlot, duration = 22, fps = 25, width = 800, height = 800, renderer = gifski_renderer())
+# Save and show the animated plot
+animate(animatedPlot, width = 800, height = 800, renderer = gifski_renderer())
 ```
 
 <img src="README_files/figure-gfm/looking at if the two rates affect each other-1.gif" width="200%" height="200%" />
 
-``` r
-gganimate::anim_save("animated_plot.gif")
-```
-
-<img src="README_files/figure-gfm/looking at if the two rates affect each other-2.png" width="200%" height="200%" />
+As we can see here
