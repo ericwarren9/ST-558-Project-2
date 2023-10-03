@@ -17,6 +17,7 @@ Eric Warren
     -   [2.11 `getFunctionNames()`](#211-getfunctionnames)
     -   [2.12 `chooseDataset()`](#212-choosedataset)
 -   [3 Exploratory Data Analysis](#3-exploratory-data-analysis)
+-   [4 Wrap Up](#4-wrap-up)
 
 This document is a vignette to show how to get data from an
 [API](https://aws.amazon.com/what-is/api/). To demonstrate, I’ll be
@@ -1545,13 +1546,66 @@ animatedPlot <- interestAndInflationRates %>%
   labs(title = 'How the Inflation Rates and Interest Rates \nwere in the Year: {frame_time}', 
        x = 'Inflation Rate (in percent)', 
        y = 'Interest Rate Offerred (in percent)') +
-  transition_time(record_calendar_year) +
+  transition_time(as.integer(record_calendar_year)) +
   ease_aes()
 
 # Save and show the animated plot
-animate(animatedPlot, width = 800, height = 800, renderer = gifski_renderer())
+animate(animatedPlot, duration = 22, fps = 25, width = 800, height = 800, renderer = gifski_renderer())
 ```
 
 <img src="README_files/figure-gfm/looking at if the two rates affect each other-1.gif" width="200%" height="200%" />
 
-As we can see here
+As we can see here, even though the inflation rate can change throughout
+years the interest rate itself might not cause a lot of change for some
+securities. For others, there are large jumps or dips in the interest
+rate, depending on what happens with the inflation rate. So in the
+future for in depth analysis, we should try to see which ones are most
+by the inflation rate, especially with the inflation rate being at a
+high since coming out of the pandemic.
+
+# 4 Wrap Up
+
+Some final thoughts with my analysis. First I would like to try to give
+formal answers to the three questions asked at the beginning of this
+section.
+
+-   Question 1: Which securities are the best to invest in? How they do
+    against inflation?
+    -   Answer: As said earlier, Treasury Bonds and Federal Financing
+        Bank options are good options for Marketable securities. We can
+        also see that if we are fortunate enough to invest in
+        Non-marketable securities the best ones against inflation are
+        Domestic Series and Foreign Series securities. For most regular
+        investors, I would advice taking a look at Treasury Bonds and
+        Federal Financing Bank securities, if interested in investing in
+        the United States Treasury. We also noticed that as the
+        inflation rate gets lower the net rate gain tends to look better
+        since most security interest rates do not fluctuate the same way
+        as the inflation rates. Even though we did not look at stocks,
+        as another form of investing, maybe in higher inflation rates we
+        should look at those instead of the US Treasury securities, as
+        US Treasury Securities tend to be more favorable with the lower
+        interest rates.
+-   Question 2: Does the fiscal year’s balance sheet in assets minus
+    liabilities (or known as net assets) have an impact on interest
+    rates?
+    -   Answer: This is hard to tell as we said earlier. We can look at
+        plots which shows the deficit increasing at a faster rate and
+        our net rate tends to decrease. Now is this because of the
+        deficit entirely? Probably not, but there is some moderate
+        correlation, as shown earlier, which before we do more in depth
+        analysis can make us believe that some relationship is present
+        (and in a negative way – meaning that if the deficit rate is
+        increasing, the net rate on our investment is decreasing).
+-   Does the month have an impact on the interest rates offered?
+    -   Answer: As shown, it did not seem the month had an effect on the
+        interest rates offered. So this shows us that any time is a good
+        time to invest if you feel that you are given a good interest
+        rate (or rate of return) on your investment.
+
+I hope this interactive vignette gave you an understanding with how to
+interact with APIs while also learning a little bit about how the US
+Treasury Security market works. If you have any questions or comments
+about this piece, please feel free to reach out to me via
+[email](ericwarren09@yahoo.com) or connect with me via
+[LinkedIn](https://www.linkedin.com/in/eric-warren-960037203/).
