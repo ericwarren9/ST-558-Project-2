@@ -521,6 +521,8 @@ they want applied to it. This will make it easier on the user to get
 data faster rather than trying to surfing for the correct function. In
 the options for this function, please put the appropriate arguments that
 would be used in the other corresponding function if used separately.
+This data set will be returned with the correct format (numeric versus
+character data, rather than all character).
 
 ``` r
 chooseDataset <- function(func = "getUnfilteredData", ...){
@@ -546,10 +548,27 @@ chooseDataset <- function(func = "getUnfilteredData", ...){
     stop("Please choose an acceptable named function. The helper file for the list of named function can be found by using the function getFunctionNames(). This will also show you the correct corresponding arguments. The default is the getUnfilteredData function argument.")
   }
   
+  # Now print the data in the correct formats and remove unnecessary nulls
+  outputDataUpdated <- as_tibble(lapply(removeNulls(outputData), convertToCorrectType))
+  
   # Lastly return the data from the corresponding function
-  return(outputData)
+  return(outputDataUpdated)
 }
 ```
+
+It was important to remove these null values as null percentages of
+interest rates, null values for the balance sheet item, or null debt
+amounts are not going to really help us in determining any connections
+or values to look at.
+
+The other thing was that if read the data in without the
+`convertToCorrectType()` function, our data would all in character
+format, which is not what we want. We actually want this data to be in
+the correct form, so we used our helper function
+`convertToCorrectType()` to get this data in the right format. We also
+had to use `lapply()` to look at each column and once we get this list
+in the right format, we will convert back to our tibble using the
+`as_tibble()` function from our `tidyverse` library.
 
 # 3 Exploratory Data Analysis
 
@@ -577,116 +596,28 @@ interestRates <- chooseDataset(func = "getUnfilteredData", data = "interest rate
 interestRates
 ```
 
-    ## # A tibble: 4,402 × 11
+    ## # A tibble: 4,374 × 11
     ##    record_date security_type_desc security_desc             avg_interest_rate_amt
-    ##    <chr>       <chr>              <chr>                     <chr>                
-    ##  1 2001-01-31  Marketable         Treasury Notes            6.096                
-    ##  2 2001-01-31  Marketable         Treasury Bonds            8.450                
-    ##  3 2001-01-31  Marketable         Treasury Inflation-Index… 3.772                
-    ##  4 2001-01-31  Marketable         Treasury Inflation-Index… 3.866                
-    ##  5 2001-01-31  Marketable         Federal Financing Bank    8.917                
-    ##  6 2001-01-31  Marketable         Total Marketable          6.620                
-    ##  7 2001-01-31  Non-marketable     Domestic Series           7.934                
-    ##  8 2001-01-31  Non-marketable     Foreign Series            7.196                
-    ##  9 2001-01-31  Non-marketable     R.E.A. Series             5.000                
-    ## 10 2001-01-31  Non-marketable     State and Local Governme… 5.576                
-    ## # ℹ 4,392 more rows
-    ## # ℹ 7 more variables: src_line_nbr <chr>, record_fiscal_year <chr>,
-    ## #   record_fiscal_quarter <chr>, record_calendar_year <chr>,
-    ## #   record_calendar_quarter <chr>, record_calendar_month <chr>,
-    ## #   record_calendar_day <chr>
+    ##    <date>      <chr>              <chr>                                     <dbl>
+    ##  1 2001-01-31  Marketable         Treasury Notes                             6.10
+    ##  2 2001-01-31  Marketable         Treasury Bonds                             8.45
+    ##  3 2001-01-31  Marketable         Treasury Inflation-Index…                  3.77
+    ##  4 2001-01-31  Marketable         Treasury Inflation-Index…                  3.87
+    ##  5 2001-01-31  Marketable         Federal Financing Bank                     8.92
+    ##  6 2001-01-31  Marketable         Total Marketable                           6.62
+    ##  7 2001-01-31  Non-marketable     Domestic Series                            7.93
+    ##  8 2001-01-31  Non-marketable     Foreign Series                             7.20
+    ##  9 2001-01-31  Non-marketable     R.E.A. Series                              5   
+    ## 10 2001-01-31  Non-marketable     State and Local Governme…                  5.58
+    ## # ℹ 4,364 more rows
+    ## # ℹ 7 more variables: src_line_nbr <dbl>, record_fiscal_year <dbl>,
+    ## #   record_fiscal_quarter <dbl>, record_calendar_year <dbl>,
+    ## #   record_calendar_quarter <dbl>, record_calendar_month <dbl>,
+    ## #   record_calendar_day <dbl>
 
 ``` r
 # Get balance sheet data
 balanceSheet <- chooseDataset(func = "getUnfilteredData", data = "balance sheet")
-balanceSheet
-```
-
-    ## # A tibble: 1,182 × 13
-    ##    record_date stmt_fiscal_year restmt_flag account_desc line_item_desc          
-    ##    <chr>       <chr>            <chr>       <chr>        <chr>                   
-    ##  1 1995-09-30  1994             Y           Assets       Property, plant, and eq…
-    ##  2 1995-09-30  1994             Y           Assets       Other assets            
-    ##  3 1995-09-30  1995             N           Assets       Total assets            
-    ##  4 1995-09-30  1994             Y           Assets       Total assets            
-    ##  5 1995-09-30  1995             N           Liabilities  Accounts payable        
-    ##  6 1995-09-30  1994             Y           Liabilities  Accounts payable        
-    ##  7 1995-09-30  1995             N           Liabilities  Interest payable        
-    ##  8 1995-09-30  1994             Y           Liabilities  Interest payable        
-    ##  9 1995-09-30  1995             N           Liabilities  Accrued payroll and ben…
-    ## 10 1995-09-30  1994             Y           Liabilities  Accrued payroll and ben…
-    ## # ℹ 1,172 more rows
-    ## # ℹ 8 more variables: position_bil_amt <chr>, src_line_nbr <chr>,
-    ## #   record_fiscal_year <chr>, record_fiscal_quarter <chr>,
-    ## #   record_calendar_year <chr>, record_calendar_quarter <chr>,
-    ## #   record_calendar_month <chr>, record_calendar_day <chr>
-
-First, through inspection of the data, null values could be present,
-which is something we do not want. We should use our function
-`removeNulls()` to get our updated data sets without these values.
-
-``` r
-interestRates <- removeNulls(interestRates)
-interestRates
-```
-
-    ## # A tibble: 4,374 × 11
-    ##    record_date security_type_desc security_desc             avg_interest_rate_amt
-    ##    <chr>       <chr>              <chr>                     <chr>                
-    ##  1 2001-01-31  Marketable         Treasury Notes            6.096                
-    ##  2 2001-01-31  Marketable         Treasury Bonds            8.450                
-    ##  3 2001-01-31  Marketable         Treasury Inflation-Index… 3.772                
-    ##  4 2001-01-31  Marketable         Treasury Inflation-Index… 3.866                
-    ##  5 2001-01-31  Marketable         Federal Financing Bank    8.917                
-    ##  6 2001-01-31  Marketable         Total Marketable          6.620                
-    ##  7 2001-01-31  Non-marketable     Domestic Series           7.934                
-    ##  8 2001-01-31  Non-marketable     Foreign Series            7.196                
-    ##  9 2001-01-31  Non-marketable     R.E.A. Series             5.000                
-    ## 10 2001-01-31  Non-marketable     State and Local Governme… 5.576                
-    ## # ℹ 4,364 more rows
-    ## # ℹ 7 more variables: src_line_nbr <chr>, record_fiscal_year <chr>,
-    ## #   record_fiscal_quarter <chr>, record_calendar_year <chr>,
-    ## #   record_calendar_quarter <chr>, record_calendar_month <chr>,
-    ## #   record_calendar_day <chr>
-
-``` r
-balanceSheet <- removeNulls(balanceSheet)
-balanceSheet
-```
-
-    ## # A tibble: 1,103 × 13
-    ##    record_date stmt_fiscal_year restmt_flag account_desc line_item_desc          
-    ##    <chr>       <chr>            <chr>       <chr>        <chr>                   
-    ##  1 1995-09-30  1994             Y           Assets       Property, plant, and eq…
-    ##  2 1995-09-30  1994             Y           Assets       Other assets            
-    ##  3 1995-09-30  1995             N           Assets       Total assets            
-    ##  4 1995-09-30  1994             Y           Assets       Total assets            
-    ##  5 1995-09-30  1995             N           Liabilities  Accounts payable        
-    ##  6 1995-09-30  1994             Y           Liabilities  Accounts payable        
-    ##  7 1995-09-30  1995             N           Liabilities  Interest payable        
-    ##  8 1995-09-30  1994             Y           Liabilities  Interest payable        
-    ##  9 1995-09-30  1995             N           Liabilities  Accrued payroll and ben…
-    ## 10 1995-09-30  1994             Y           Liabilities  Accrued payroll and ben…
-    ## # ℹ 1,093 more rows
-    ## # ℹ 8 more variables: position_bil_amt <chr>, src_line_nbr <chr>,
-    ## #   record_fiscal_year <chr>, record_fiscal_quarter <chr>,
-    ## #   record_calendar_year <chr>, record_calendar_quarter <chr>,
-    ## #   record_calendar_month <chr>, record_calendar_day <chr>
-
-It was important to remove these null values as null percentages of
-interest rates or null values for the balance sheet item is not going to
-really help us in determining any connections or values to look at.
-
-Now we are going to notice that our data is all in character format,
-which is not what we want. We actually want this data to be in the
-correct form, so we are going to use our helper function
-`convertToCorrectType()` to get this data in the right format. We are
-also going to use `lapply()` to look at each column and once we get this
-list in the right format, we will convert back to our tibble.
-
-``` r
-# Convert balance sheet
-balanceSheet <- as_tibble(lapply(balanceSheet, convertToCorrectType))
 balanceSheet
 ```
 
@@ -709,33 +640,8 @@ balanceSheet
     ## #   record_calendar_year <dbl>, record_calendar_quarter <dbl>,
     ## #   record_calendar_month <dbl>, record_calendar_day <dbl>
 
-``` r
-# Convert interest rates
-interestRates <- as_tibble(lapply(interestRates, convertToCorrectType))
-interestRates
-```
-
-    ## # A tibble: 4,374 × 11
-    ##    record_date security_type_desc security_desc             avg_interest_rate_amt
-    ##    <date>      <chr>              <chr>                                     <dbl>
-    ##  1 2001-01-31  Marketable         Treasury Notes                             6.10
-    ##  2 2001-01-31  Marketable         Treasury Bonds                             8.45
-    ##  3 2001-01-31  Marketable         Treasury Inflation-Index…                  3.77
-    ##  4 2001-01-31  Marketable         Treasury Inflation-Index…                  3.87
-    ##  5 2001-01-31  Marketable         Federal Financing Bank                     8.92
-    ##  6 2001-01-31  Marketable         Total Marketable                           6.62
-    ##  7 2001-01-31  Non-marketable     Domestic Series                            7.93
-    ##  8 2001-01-31  Non-marketable     Foreign Series                             7.20
-    ##  9 2001-01-31  Non-marketable     R.E.A. Series                              5   
-    ## 10 2001-01-31  Non-marketable     State and Local Governme…                  5.58
-    ## # ℹ 4,364 more rows
-    ## # ℹ 7 more variables: src_line_nbr <dbl>, record_fiscal_year <dbl>,
-    ## #   record_fiscal_quarter <dbl>, record_calendar_year <dbl>,
-    ## #   record_calendar_quarter <dbl>, record_calendar_month <dbl>,
-    ## #   record_calendar_day <dbl>
-
-Now that our data is in the correct form we can proceed with it doing
-our analysis.
+Now that our data is read in and as we can see all the columns are in
+the correct format we can proceed with it doing our analysis.
 
 The first thing we are going to do is creating some contingency tables
 that will allow us to better understand some things about how securities
@@ -1128,9 +1034,6 @@ the inflation data and show this difference.
 ``` r
 # Get interest rates data
 interestRatesLast10 <- chooseDataset(func = "filterDate", "interest rates", "2013-01-01", "gte")
-
-# Remove nulls and get in right format
-interestRatesLast10 <- as_tibble(lapply(removeNulls(interestRatesLast10), convertToCorrectType))
 
 # Combine with inflation data
 interestAndInflationRatesLast10 <- inner_join(interestRatesLast10, inflationData, by = c("record_calendar_year" = "year"))
