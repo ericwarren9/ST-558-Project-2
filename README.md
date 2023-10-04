@@ -557,11 +557,13 @@ We have now created functions to interact with our API data sources. We
 are now going to interact with them. Some questions we are hoping to
 answer include:
 
--   Which securities are the best to invest in? How they do against
-    inflation?
+-   Which securities are the best to invest in? How do they perform
+    against inflation?
 -   Does the fiscal year’s balance sheet in assets minus liabilities (or
-    known as net assets) have an impact on interest rates?
--   Does the month have an impact on the interest rates offered?
+    known as net assets – also known as an asset deficit if negative)
+    have an impact on interest rates?
+-   Does the month have an impact on the interest rates offered? Is it
+    better to buy securities in January than July for example?
 
 Now that we have asked some questions, let us dive into our data. First
 we will retrieve the data using our wrapper function `chooseDataset()`.
@@ -1650,8 +1652,8 @@ section.
         US Treasury Securities tend to be more favorable with the lower
         interest rates.
 -   Question 2: Does the fiscal year’s balance sheet in assets minus
-    liabilities (or known as net assets) have an impact on interest
-    rates?
+    liabilities (or known as net assets – also known as an asset deficit
+    if negative) have an impact on interest rates?
     -   Answer: This is hard to tell as we said earlier. We can look at
         plots which shows the deficit increasing at a faster rate and
         our net rate tends to decrease. Now is this because of the
@@ -1660,7 +1662,8 @@ section.
         analysis can make us believe that some relationship is present
         (and in a negative way – meaning that if the deficit rate is
         increasing, the net rate on our investment is decreasing).
--   Does the month have an impact on the interest rates offered?
+-   Question 3: Does the month have an impact on the interest rates
+    offered?
     -   Answer: As shown, it did not seem the month had an effect on the
         interest rates offered. So this shows us that any time is a good
         time to invest if you feel that you are given a good interest

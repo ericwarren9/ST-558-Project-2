@@ -418,9 +418,9 @@ chooseDataset <- function(func = "getUnfilteredData", ...){
 
 We have now created functions to interact with our API data sources. We are now going to interact with them. Some questions we are hoping to answer include:
 
-- Which securities are the best to invest in? How they do against inflation?
-- Does the fiscal year's balance sheet in assets minus liabilities (or known as net assets) have an impact on interest rates?
-- Does the month have an impact on the interest rates offered?
+- Which securities are the best to invest in? How do they perform against inflation?
+- Does the fiscal year's balance sheet in assets minus liabilities (or known as net assets -- also known as an asset deficit if negative) have an impact on interest rates?
+- Does the month have an impact on the interest rates offered? Is it better to buy securities in January than July for example?
 
 Now that we have asked some questions, let us dive into our data. First we will retrieve the data using our wrapper function `chooseDataset()`. We want to first choose to get the unfiltered data of the interest rates data and then we will choose to grab the unfiltered data of the balance sheet data. We will do this below.
 ```{r read in needed data}
@@ -899,9 +899,9 @@ Some final thoughts with my analysis. First I would like to try to give formal a
 
 - Question 1: Which securities are the best to invest in? How they do against inflation?
   - Answer: As said earlier, Treasury Bonds and Federal Financing Bank options are good options for Marketable securities. We can also see that if we are fortunate enough to invest in Non-marketable securities the best ones against inflation are Domestic Series and Foreign Series securities. For most regular investors, I would advice taking a look at Treasury Bonds and Federal Financing Bank securities, if interested in investing in the United States Treasury. We also noticed that as the inflation rate gets lower the net rate gain tends to look better since most security interest rates do not fluctuate the same way as the inflation rates. Even though we did not look at stocks, as another form of investing, maybe in higher inflation rates we should look at those instead of the US Treasury securities, as US Treasury Securities tend to be more favorable with the lower interest rates.
-- Question 2: Does the fiscal year's balance sheet in assets minus liabilities (or known as net assets) have an impact on interest rates?
+- Question 2: Does the fiscal year's balance sheet in assets minus liabilities (or known as net assets -- also known as an asset deficit if negative) have an impact on interest rates?
   - Answer: This is hard to tell as we said earlier. We can look at plots which shows the deficit increasing at a faster rate and our net rate tends to decrease. Now is this because of the deficit entirely? Probably not, but there is some moderate correlation, as shown earlier, which before we do more in depth analysis can make us believe that some relationship is present (and in a negative way -- meaning that if the deficit rate is increasing, the net rate on our investment is decreasing). 
-- Does the month have an impact on the interest rates offered?
+- Question 3: Does the month have an impact on the interest rates offered?
   - Answer: As shown, it did not seem the month had an effect on the interest rates offered. So this shows us that any time is a good time to invest if you feel that you are given a good interest rate (or rate of return) on your investment.
   
 I hope this interactive vignette gave you an understanding with how to interact with APIs while also learning a little bit about how the US Treasury Security market works. If you have any questions or comments about this piece, please feel free to reach out to me via [email](mailto:ericwarren09@yahoo.com) or connect with me via [LinkedIn](https://www.linkedin.com/in/eric-warren-960037203/).
